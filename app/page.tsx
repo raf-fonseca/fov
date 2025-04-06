@@ -35,7 +35,7 @@ export default function Home() {
       <main className="">
         <FadeInSection>
           <section className="wrapper">
-            <div className=" py-12 mx-auto   xl:py-20 2xl:py-24  flex flex-col md:flex-row items-center gap-6  md:gap-16 justify-between">
+            <div className=" pb-12 mx-auto   xl:py-20 2xl:py-24  flex flex-col md:flex-row items-center gap-6  md:gap-16 justify-between">
               <div className=" w-full space-y-6 2xl:space-y-8">
                 <h1 className="text-5xl xl:text-6xl 2xl:text-7xl font-black text-white">
                   Advertise in{" "}

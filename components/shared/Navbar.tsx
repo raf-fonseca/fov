@@ -34,7 +34,7 @@ export default function Home() {
   const router = useRouter();
 
   return (
-    <nav className="w-full wrapper   py-5 flex items-center justify-between border-b border-gray-800">
+    <nav className="w-full wrapper py-5 flex items-center justify-between border-b border-gray-800 mb-8">
       {/* Logo */}
       <Link href={"/"}>
         <div className="flex-shrink-0">

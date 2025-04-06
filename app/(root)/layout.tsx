@@ -20,7 +20,7 @@ const Page = ({
     >
       {pathname === "/company" && <Sidebar />}
 
-      <main className=" w-full h-screen  overflow-auto flex flex-col items-start relative text-white justify-start pb-3">
+      <main className=" w-full h-screen overflow-auto flex flex-col items-start relative text-white justify-start pb-3">
         {pathname !== "/company" && (
           <div className="absolute top-0 w-full z-50">
             <Navbar />
