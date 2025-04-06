@@ -916,7 +916,7 @@ export default function Dashboard() {
                     },
                   ].map((campaign) => (
                     <Link
-                      href={`/campaigns`}
+                      href={`/dashboard/campaigns`}
                       key={campaign.name}
                       className="block"
                     >
@@ -940,7 +940,7 @@ export default function Dashboard() {
               </CardContent>
               <CardFooter className="p-3 pt-0 mt-auto border-t border-slate-800">
                 <Button variant="outline" size="sm" className="w-full" asChild>
-                  <Link href="/campaigns">View All Campaigns</Link>
+                  <Link href="/dashboard/campaigns">View All Campaigns</Link>
                 </Button>
               </CardFooter>
             </div>
@@ -956,7 +956,7 @@ export default function Dashboard() {
               <CardContent className="p-3 flex-1 overflow-auto">
                 <div className="space-y-2">
                   {ads.map((ad) => (
-                    <Link href={`/ads`} key={ad.id} className="block">
+                    <Link href={`/dashboard/ads`} key={ad.id} className="block">
                       <div className="flex items-start gap-2 p-2 rounded-lg hover:bg-slate-800 transition-colors">
                         <div className="w-12 h-12 rounded-md bg-gradient-to-r from-orange-800 to-red-800 flex items-center justify-center">
                           <Play className="h-4 w-4 text-white" />
@@ -977,7 +977,7 @@ export default function Dashboard() {
               </CardContent>
               <CardFooter className="p-3 pt-0 mt-auto border-t border-slate-800">
                 <Button variant="outline" size="sm" className="w-full" asChild>
-                  <Link href="/ads">View All Ads</Link>
+                  <Link href="/dashboard/ads">View All Ads</Link>
                 </Button>
               </CardFooter>
             </div>
