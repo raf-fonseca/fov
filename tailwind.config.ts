@@ -16,16 +16,11 @@ const config = {
         "2xl": "1400px",
       },
     },
+    colors: {
+      ...colors,
+    },
     extend: {
       colors: {
-        // Include specific Tailwind default colors we need
-        slate: colors.slate,
-        white: "#FFFFFF", // Override with true white
-        black: "#000000", // Override with true black
-        green: colors.green,
-        sky: colors.sky,
-        purple: colors.purple,
-
         primary: {
           500: "#FFFFFF99",
           50: " #0080FF",
@@ -58,6 +53,8 @@ const config = {
           400: "#AFAFAF", // Disabled - color name in figma
           50: "#F6F6F6", // White Grey - color name in figma
         },
+        black: "#000000",
+        white: "#FFFFFF",
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
@@ -86,6 +83,7 @@ const config = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        slate: colors.slate,
       },
       fontFamily: {
         oxanium: ["var(--font-oxanium)"],

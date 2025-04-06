@@ -430,8 +430,8 @@ export default function Dashboard() {
                     </div>
                   </div>
                 </div>
-                <Button variant="outline" asChild>
-                  <Link href="/campaigns">
+                <Button variant="outline" size="sm" asChild>
+                  <Link href="/dashboard/campaigns">
                     Campaign Library <ChevronRight className="ml-1 h-4 w-4" />
                   </Link>
                 </Button>
@@ -887,7 +887,7 @@ export default function Dashboard() {
       </main>
 
       {/* Previous Campaigns, Ads, and Total Impressions Section */}
-      <div className="container mx-auto pb-4 px-2">
+      <div className="container mx-auto pb-4 px-10">
         <div className="grid grid-cols-6 gap-4">
           {/* Previous Campaigns */}
           <Card className="col-span-2 overflow-hidden border-slate-800 bg-slate-950 py-0 pb-4">

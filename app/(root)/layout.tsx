@@ -20,14 +20,14 @@ const Page = ({
     >
       {pathname === "/company" && <Sidebar />}
 
-      <main className=" w-full h-screen overflow-auto flex flex-col items-start relative text-white justify-start pb-3">
+      <main className=" w-full h-screen overflow-auto flex flex-col  relative text-white justify-start pb-3">
         {pathname !== "/company" && (
           <div className="absolute top-0 w-full z-50">
             <Navbar />
           </div>
         )}
 
-        <Image
+        {/* <Image
           src="/glow1.svg"
           alt="404"
           layout="fill"
@@ -42,7 +42,7 @@ const Page = ({
           objectFit="contain"
           objectPosition="right"
           className="z-0"
-        />
+        /> */}
         {children}
       </main>
     </div>
