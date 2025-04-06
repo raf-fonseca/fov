@@ -353,7 +353,7 @@ export default function Dashboard() {
   return (
     <div className="flex min-h-screen flex-col bg-background dark mt-24">
       {/* Main content */}
-      <main className="flex-1 px-6 pt-6">
+      <main className="flex-1 px-2 ">
         <div className="container mx-auto">
           {/* Notification banner for upcoming campaigns */}
           {currentCampaign.status === "upcoming" && (
@@ -430,7 +430,7 @@ export default function Dashboard() {
                     </div>
                   </div>
                 </div>
-                <Button variant="outline" size="sm" asChild>
+                <Button variant="outline" asChild>
                   <Link href="/campaigns">
                     Campaign Library <ChevronRight className="ml-1 h-4 w-4" />
                   </Link>

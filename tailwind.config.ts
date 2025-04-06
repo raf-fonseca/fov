@@ -1,7 +1,7 @@
-import type { Config } from "tailwindcss"
+import type { Config } from "tailwindcss";
+import colors from "tailwindcss/colors";
 
 const config = {
-  darkMode: ["class"],
   content: [
     "./pages/**/*.{ts,tsx}",
     "./components/**/*.{ts,tsx}",
@@ -18,30 +18,38 @@ const config = {
     },
     extend: {
       colors: {
+        // Include specific Tailwind default colors we need
+        slate: colors.slate,
+        white: "#FFFFFF", // Override with true white
+        black: "#000000", // Override with true black
+        green: colors.green,
+        sky: colors.sky,
+        purple: colors.purple,
+
         primary: {
           500: "#FFFFFF99",
           50: " #0080FF",
           100: "#230E2C",
-          200: '#470257',
+          200: "#470257",
           DEFAULT: "#9234E8",
           foreground: "hsl(var(--primary-foreground))",
         },
         primary2: {
-          DEFAULT:"#AD1AAF",
-          50:"#E71CE8",
-          100:"#05778D",
-          200:"#10394D",
+          DEFAULT: "#AD1AAF",
+          50: "#E71CE8",
+          100: "#05778D",
+          200: "#10394D",
         },
         coral: {
           500: "#15BF59",
         },
         brown: {
-          DEFAULT:"#C6AC8F",
-          50:"#EFE7DD",
-          100:"#65625D",
-          200: '#C6AC8F',
-          300:"#E9DED3",
-          400: "#F3EFE8"
+          DEFAULT: "#C6AC8F",
+          50: "#EFE7DD",
+          100: "#65625D",
+          200: "#C6AC8F",
+          300: "#E9DED3",
+          400: "#F3EFE8",
         },
 
         grey: {
@@ -50,8 +58,6 @@ const config = {
           400: "#AFAFAF", // Disabled - color name in figma
           50: "#F6F6F6", // White Grey - color name in figma
         },
-        black: "#000000",
-        white: "#FFFFFF",
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
@@ -84,7 +90,7 @@ const config = {
       fontFamily: {
         oxanium: ["var(--font-oxanium)"],
         averia: ["var(--font-averia)"],
-        poppins : ["var(--font-poppins)"]
+        poppins: ["var(--font-poppins)"],
       },
       backgroundImage: {
         "hero-img": "url('/assets/images/hero.png')",
@@ -119,17 +125,16 @@ const config = {
         },
       },
       animation: {
-                aurora: "aurora 60s linear infinite",
+        aurora: "aurora 60s linear infinite",
 
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
-          scroll:
+        scroll:
           "scroll var(--animation-duration, 40s) var(--animation-direction, forwards) linear infinite",
-     
       },
     },
   },
   plugins: [require("tailwindcss-animate")],
-} satisfies Config
+} satisfies Config;
 
-export default config
+export default config;
