@@ -25,6 +25,7 @@ import ReactCrop, {
   makeAspectCrop,
 } from "react-image-crop";
 import "react-image-crop/dist/ReactCrop.css";
+import { ArrowRight } from "lucide-react";
 
 function canvasPreview(
   image: HTMLImageElement,
@@ -349,7 +350,7 @@ const ModelComponent = ({ id }: { id: number }) => {
     <div style={{ width: "100vw", height: "100vh" }} className="relative z-30">
       {showCanvas && (
         <Canvas
-          camera={{ position: [0, 8, 15], fov: 120 }}
+          camera={{ position: [0, 8, 15], fov: 100 }}
           shadows
           className="z-20"
         >
@@ -701,12 +702,12 @@ const ModelComponent = ({ id }: { id: number }) => {
                     </div>
                   </div>
 
-                  <Button
-                    onClick={() => setStep(3)}
-                    className="bg-primary-50 mt-4 text-xs flex items-center inner-shadow gap-2 hover:bg-primary-50/70 w-full px-4 2xl:px-6 font-semibold 2xl:text-base text-white py-2.5 2xl:py-3"
-                  >
-                    Add To Campaign
-                  </Button>
+                  <Link href="/campaign-builder" className="w-full">
+                    <Button className="bg-primary-50 mt-4 text-xs flex items-center inner-shadow gap-2 hover:bg-primary-50/70 w-full px-4 2xl:px-6 font-semibold 2xl:text-base text-white py-2.5 2xl:py-3">
+                      Campaign Builder
+                      <ArrowRight className="w-4 h-4" />
+                    </Button>
+                  </Link>
                 </div>
               </div>
             </motion.div>
