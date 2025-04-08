@@ -6,8 +6,6 @@ import {
   ArrowLeft,
   ArrowRight,
   ChevronRight,
-  Menu,
-  MenuIcon,
   Package,
   Play,
   Radio,
@@ -31,17 +29,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Progress } from "@/components/ui/progress";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { ShimmerButton } from "react-shimmer-effects";
 
 // Define types for campaign and tooltip data
 interface Campaign {
@@ -57,7 +46,7 @@ interface Campaign {
   screenPercentage: number;
   viewability: number;
   progress: number;
-  status: "live" | "completed" | "upcoming";
+  status: "live" | "completed" | "upcoming" | "processing";
   platformBreakdown: {
     pc: number;
     console: number;
@@ -98,7 +87,7 @@ const campaigns: Campaign[] = [
     screenPercentage: 42,
     viewability: 90,
     progress: 49.8,
-    status: "live" as const,
+    status: "processing" as const,
     platformBreakdown: {
       pc: 45,
       console: 35,
@@ -305,6 +294,15 @@ const generateDailyImpressions = () => {
   return data;
 };
 
+// Format number with commas
+const formatNumber = (num: number) => {
+  return num.toLocaleString();
+};
+
+const isProcessing = (status: string): status is "processing" => {
+  return status === "processing";
+};
+
 export default function Dashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [currentCampaignIndex, setCurrentCampaignIndex] = useState(0);
@@ -322,11 +320,6 @@ export default function Dashboard() {
         position: { x: e.clientX, y: e.clientY },
       }));
     }
-  };
-
-  // Format number with commas
-  const formatNumber = (num: number) => {
-    return num.toLocaleString();
   };
 
   const currentCampaign = campaigns[currentCampaignIndex];
@@ -368,13 +361,14 @@ export default function Dashboard() {
           {/* Featured Campaign Section - Takes up upper half of screen */}
           <div className="relative mb-6">
             {/* Live Indicator */}
-            {currentCampaign.status === "live" && (
-              <div className="absolute -left-4 -top-4 rounded-full bg-sky-500/20 px-3 py-1 text-xs font-medium text-sky-400 ring-2 ring-sky-500/50 z-[100]">
-                <div className="flex flex-row gap-2 items-center">
-                  <Radio className="h-3 w-3 animate-pulse" /> LIVE NOW
+            {currentCampaign.status === "live" ||
+              (currentCampaign.status === "processing" && (
+                <div className="absolute -left-4 -top-4 rounded-full bg-sky-500/20 px-3 py-1 text-xs font-medium text-sky-400 ring-2 ring-sky-500/50 z-[100]">
+                  <div className="flex flex-row gap-2 items-center">
+                    <Radio className="h-3 w-3 animate-pulse" /> LIVE NOW
+                  </div>
                 </div>
-              </div>
-            )}
+              ))}
 
             {/* Upcoming Indicator */}
             {currentCampaign.status === "upcoming" && (
@@ -572,8 +566,7 @@ export default function Dashboard() {
 
                 <Card
                   className={`${
-                    currentCampaign.status === "live" ||
-                    currentCampaign.status === "completed"
+                    currentCampaign.status !== "upcoming"
                       ? "col-span-2"
                       : "hidden"
                   } bg-gradient-to-r from-sky-950 to-slate-950 border-0`}
@@ -592,8 +585,7 @@ export default function Dashboard() {
 
                 {/* Second Row */}
                 {/* Stats Section */}
-                {currentCampaign.status === "live" ||
-                currentCampaign.status === "completed" ? (
+                {currentCampaign.status !== "upcoming" ? (
                   <div className="col-span-2 grid grid-cols-2 gap-4">
                     {/* Total Impressions */}
                     <Card className="bg-slate-950 border-slate-800 py-0 pb-1">
@@ -614,7 +606,11 @@ export default function Dashboard() {
                           Impressions per Play
                         </CardTitle>
                         <CardDescription className="text-xl font-bold text-white">
-                          {currentCampaign.impressionsPerPlay.toFixed(1)}
+                          {isProcessing(currentCampaign.status) ? (
+                            <ShimmerButton size="md" />
+                          ) : (
+                            currentCampaign.impressionsPerPlay.toFixed(1)
+                          )}
                         </CardDescription>
                       </CardHeader>
                     </Card>

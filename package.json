@@ -35,6 +35,7 @@
     "react-hot-toast": "^2.4.1",
     "react-icons": "^5.2.1",
     "react-image-crop": "^11.0.7",
+    "react-shimmer-effects": "^1.0.4",
     "recharts": "^2.15.1",
     "tailwind-merge": "^2.4.0",
     "tailwindcss-animate": "^1.0.7",

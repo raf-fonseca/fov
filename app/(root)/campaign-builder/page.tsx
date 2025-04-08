@@ -235,7 +235,7 @@ export default function CampaignBuilder() {
                         <div className="space-y-4">
                           <div className="flex justify-between text-sm text-slate-400">
                             <span>Impression Range (Millions)</span>
-                            <span>
+                            <span className="text-white">
                               {(
                                 impressionRanges[slot.id]?.[0] ??
                                 slot.impressions[0]
@@ -287,7 +287,7 @@ export default function CampaignBuilder() {
               </p>
             </div>
             <Link href="/campaign-scheduler">
-              <Button className="bg-primary-50 hover:bg-primary-50/70 px-8">
+              <Button className="bg-primary-50 hover:bg-primary-50/70 px-8 text-white">
                 Continue to Scheduler
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>

@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { ArrowRight, Calendar, Link, Lock, LockOpen } from "lucide-react";
-import { Toaster, toast } from "react-hot-toast";
 import { cn } from "@/lib/utils";
 
 import { Button } from "@/components/ui/button";
@@ -283,61 +282,10 @@ export default function CampaignScheduler() {
       selectedDates: Array.from(new Set(timeSlots.map((slot) => slot.date))),
       days: new Set(timeSlots.map((slot) => slot.date)).size,
     }));
-
-    // Show toast notifications for price changes
-    const priceDifference =
-      (timeSlots.length - campaign.selectedTimePeriods.length) * 100;
-    if (priceDifference > 0) {
-      toast("Price decreased by $100 ⬇️", {
-        style: {
-          background: "#1f2937",
-          color: "#fff",
-        },
-      });
-    } else if (priceDifference < 0) {
-      toast("Price increased by $100 ⬆️", {
-        style: {
-          background: "#1f2937",
-          color: "#fff",
-        },
-      });
-    }
-  };
-
-  const handleAddToCart = () => {
-    // Add campaign to cart logic would go here
-    alert(
-      `Added campaign "${campaign.name}" to cart for ${
-        campaign.days
-      } days with approximately ${campaign.impressions.toLocaleString()} impressions`
-    );
   };
 
   return (
     <div className="flex flex-col gap-6 mt-24 px-10 lg:px-20 pb-24">
-      <Toaster
-        position="top-right"
-        toastOptions={{
-          duration: 3000,
-          style: {
-            background: "#151825",
-            color: "#fff",
-            border: "1px solid #2a2d3a",
-          },
-          success: {
-            iconTheme: {
-              primary: "#10b981",
-              secondary: "#fff",
-            },
-          },
-          error: {
-            iconTheme: {
-              primary: "#ef4444",
-              secondary: "#fff",
-            },
-          },
-        }}
-      />
       <Card className="bg-[#151825] border-[#2a2d3a] ">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -528,7 +476,7 @@ export default function CampaignScheduler() {
         <div className="max-w-[1200px] mx-auto px-10 lg:px-20 py-4">
           <div className="flex justify-end">
             {/* <Link href="/campaign-scheduler"> */}
-            <Button className="bg-primary-50 hover:bg-primary-50/70 px-8">
+            <Button className="bg-primary-50 hover:bg-primary-50/70 px-8 text-white">
               Continue to Payment
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
