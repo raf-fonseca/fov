@@ -700,18 +700,6 @@ const ModelComponent = ({ id }: { id: number }) => {
                       </p>
                     </div>
                   </div>
-                  <p className="text-xs 2xl:text-sm text-white mt-1">
-                    Monthly Impressions
-                  </p>
-                  <Slider
-                    defaultValue={[33]}
-                    max={100}
-                    step={1}
-                    className="mt-2"
-                  />
-                  <p className="text-white mt-2 text-xs 2xl:text-sm">
-                    ~ 2.5B Impressions / mo
-                  </p>
 
                   <Button
                     onClick={() => setStep(3)}
