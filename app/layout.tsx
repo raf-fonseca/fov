@@ -31,7 +31,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${poppins.variable} ${inter.variable} bg-[#03060B]`}>
+      <body
+        className={`${poppins.variable} ${inter.variable} bg-[#03060B] dark`}
+      >
         <NextTopLoader
           color="purple"
           initialPosition={0.08}

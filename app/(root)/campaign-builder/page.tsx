@@ -286,7 +286,7 @@ export default function CampaignBuilder() {
                 slots
               </p>
             </div>
-            <Link href="/campaign-summary">
+            <Link href="/campaign-scheduler">
               <Button className="bg-primary-50 hover:bg-primary-50/70 px-8">
                 Continue to Scheduler
                 <ArrowRight className="ml-2 h-4 w-4" />
