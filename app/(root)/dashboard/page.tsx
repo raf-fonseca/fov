@@ -572,7 +572,10 @@ export default function Dashboard() {
 
                 <Card
                   className={`${
-                    currentCampaign.status === "live" ? "col-span-2" : "hidden"
+                    currentCampaign.status === "live" ||
+                    currentCampaign.status === "completed"
+                      ? "col-span-2"
+                      : "hidden"
                   } bg-gradient-to-r from-sky-950 to-slate-950 border-0`}
                 >
                   <CardContent className="p-4">
@@ -589,7 +592,8 @@ export default function Dashboard() {
 
                 {/* Second Row */}
                 {/* Stats Section */}
-                {currentCampaign.status === "live" ? (
+                {currentCampaign.status === "live" ||
+                currentCampaign.status === "completed" ? (
                   <div className="col-span-2 grid grid-cols-2 gap-4">
                     {/* Total Impressions */}
                     <Card className="bg-slate-950 border-slate-800 py-0 pb-1">

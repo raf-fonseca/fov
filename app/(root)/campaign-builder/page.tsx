@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
@@ -92,10 +92,26 @@ export default function CampaignBuilder() {
     },
   ]);
 
-  // Store impression ranges separately from the game data
   const [impressionRanges, setImpressionRanges] = useState<
     Record<string, [number, number]>
   >({});
+
+  const [totalImpressions, setTotalImpressions] = useState<number>(0);
+  const [minimumGuaranteed, setMinimumGuaranteed] = useState<number>(0);
+
+  // Calculate minimum guaranteed impressions based on selected slots
+  useEffect(() => {
+    const totalMin = games.reduce((sum, game) => {
+      return (
+        sum +
+        game.adSlots.reduce((gameSum, slot) => {
+          const range = impressionRanges[slot.id] || slot.impressions;
+          return gameSum + range[0];
+        }, 0)
+      );
+    }, 0);
+    setMinimumGuaranteed(totalMin);
+  }, [games, impressionRanges]);
 
   const updateSlotImpressions = (slotId: string, value: [number, number]) => {
     setImpressionRanges((prev) => ({
@@ -119,8 +135,62 @@ export default function CampaignBuilder() {
   };
 
   return (
-    <div className="min-h-screen bg-background mt-24 px-10 lg:px-20 pb-24">
-      <div className="max-w-[1200px] mx-auto space-y-6">
+    <div className="min-h-screen bg-background mt-24 px-10 lg:px-20">
+      <div className="max-w-[1200px] mx-auto space-y-6 pb-32">
+        {/* Total Impressions Section */}
+        <Card className="bg-slate-950 border-slate-800">
+          <CardHeader>
+            <CardTitle className="text-xl text-white">Campaign Goals</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-400">
+                  Target Total Impressions (Millions)
+                </label>
+                <div className="flex items-center gap-4">
+                  <Slider
+                    value={[totalImpressions]}
+                    onValueChange={(value) => setTotalImpressions(value[0])}
+                    min={0}
+                    max={50}
+                    step={0.1}
+                    className="flex-1"
+                  />
+                  <span className="text-lg font-medium text-white min-w-[60px] text-right">
+                    {totalImpressions.toFixed(1)}M
+                  </span>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-400">
+                  Minimum Guaranteed Impressions
+                </label>
+                <div className="flex items-center gap-4">
+                  <div className="flex-1 h-2 bg-slate-800 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-sky-500 transition-all duration-500 ease-out"
+                      style={{
+                        width: `${
+                          (minimumGuaranteed / totalImpressions) * 100
+                        }%`,
+                      }}
+                    />
+                  </div>
+                  <span className="text-lg font-medium text-white min-w-[60px] text-right">
+                    {minimumGuaranteed.toFixed(1)}M
+                  </span>
+                </div>
+              </div>
+            </div>
+            <p className="text-sm text-slate-400 mt-2">
+              Set your desired campaign threshold. The minimum guaranteed
+              impressions shown below represent the baseline you'll receive
+              based on your selected ad slots and their ranges.
+            </p>
+          </CardContent>
+        </Card>
+
         <div className="grid grid-cols-1 gap-6">
           {games.map((game) => (
             <Card key={game.id} className="bg-slate-950 border-slate-800">
@@ -206,7 +276,7 @@ export default function CampaignBuilder() {
       </div>
 
       {/* Sticky bottom section */}
-      <div className="fixed bottom-0 left-0 right-0 bg-slate-950 border-t border-slate-800">
+      <div className="fixed bottom-0 left-0 right-0 bg-slate-950 border-t border-slate-800 z-50">
         <div className="max-w-[1200px] mx-auto px-10 lg:px-20 py-4">
           <div className="flex justify-between items-center">
             <div>
