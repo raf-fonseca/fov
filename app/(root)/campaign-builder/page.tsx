@@ -4,8 +4,9 @@ import { useState } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
-import { Trash2, ImageIcon } from "lucide-react";
+import { Trash2, ImageIcon, ArrowRight } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 
 interface AdSlot {
   id: string;
@@ -118,7 +119,7 @@ export default function CampaignBuilder() {
   };
 
   return (
-    <div className="min-h-screen bg-background mt-24 px-10 lg:px-20">
+    <div className="min-h-screen bg-background mt-24 px-10 lg:px-20 pb-24">
       <div className="max-w-[1200px] mx-auto space-y-6">
         <div className="grid grid-cols-1 gap-6">
           {games.map((game) => (
@@ -201,6 +202,27 @@ export default function CampaignBuilder() {
               </CardContent>
             </Card>
           ))}
+        </div>
+      </div>
+
+      {/* Sticky bottom section */}
+      <div className="fixed bottom-0 left-0 right-0 bg-slate-950 border-t border-slate-800">
+        <div className="max-w-[1200px] mx-auto px-10 lg:px-20 py-4">
+          <div className="flex justify-between items-center">
+            <div>
+              <p className="text-sm text-slate-400">Total Ad Slots Selected</p>
+              <p className="text-xl font-bold text-white">
+                {games.reduce((total, game) => total + game.adSlots.length, 0)}{" "}
+                slots
+              </p>
+            </div>
+            <Link href="/campaign-summary">
+              <Button className="bg-primary-50 hover:bg-primary-50/70 px-8">
+                Continue to Scheduler
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </Link>
+          </div>
         </div>
       </div>
     </div>

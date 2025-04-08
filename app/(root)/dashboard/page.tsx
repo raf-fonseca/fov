@@ -365,8 +365,6 @@ export default function Dashboard() {
             </div>
           )}
 
-          {/* Header with Progress and Navigation */}
-
           {/* Featured Campaign Section - Takes up upper half of screen */}
           <div className="relative mb-6">
             {/* Live Indicator */}
@@ -437,17 +435,82 @@ export default function Dashboard() {
                 </Button>
               </div>
               <div className="grid grid-cols-6 gap-4 p-4">
-                {/* Row 1: Campaign Photo (2) or Uploaded Media (2), Stats (2), Pie Chart (2) */}
-                {currentCampaign.status === "upcoming" ? (
-                  <Card className="col-span-2 bg-slate-950 border-slate-800 py-0">
-                    <div className="flex flex-col gap-0">
+                {/* First Row */}
+
+                <Card className="col-span-4 bg-slate-950 border-slate-800 py-0">
+                  <CardHeader className="p-3 bg-gradient-to-r from-sky-950 to-slate-950 rounded-t-[13px]">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <CardTitle className="text-xs text-slate-400">
+                          Daily Impressions
+                        </CardTitle>
+                        <p className="text-xs text-slate-500">
+                          All impressions over campaign duration
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-medium text-white">
+                          {formatNumber(currentCampaign.totalImpressions)}
+                        </p>
+                        <p className="text-xs text-slate-400">Impressions</p>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="p-3 pt-0 h-[180px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart
+                        data={dailyImpressions}
+                        margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
+                      >
+                        <XAxis
+                          dataKey="day"
+                          tick={{ fontSize: 10, fill: "#94a3b8" }}
+                          tickLine={{ stroke: "#475569" }}
+                          axisLine={{ stroke: "#475569" }}
+                        />
+                        <YAxis
+                          tick={{ fontSize: 10, fill: "#94a3b8" }}
+                          tickLine={{ stroke: "#475569" }}
+                          axisLine={{ stroke: "#475569" }}
+                          tickFormatter={(value) => `${value}M`}
+                          width={35}
+                        />
+                        <Tooltip
+                          contentStyle={{
+                            backgroundColor: "#1e293b",
+                            border: "none",
+                            borderRadius: "0.375rem",
+                            color: "#f8fafc",
+                            fontSize: "12px",
+                          }}
+                          formatter={(value: number) => [
+                            `${value}M`,
+                            "Impressions",
+                          ]}
+                          labelFormatter={(label) => `Day ${label}`}
+                        />
+                        <Line
+                          type="monotone"
+                          dataKey="impressions"
+                          stroke="hsl(199 95% 50%)"
+                          strokeWidth={2}
+                          dot={false}
+                          activeDot={{ r: 4, fill: "hsl(199 95% 50%)" }}
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+                {currentCampaign.status === "upcoming" && (
+                  <Card className="col-span-2 bg-slate-950 border-slate-800 py-0 h-[280px]">
+                    <div className="flex flex-col h-full">
                       <CardHeader className="p-3 pb-0">
                         <CardTitle className="text-lg">
                           Uploaded Media
                         </CardTitle>
                         <CardDescription>Campaign assets</CardDescription>
                       </CardHeader>
-                      <CardContent className="p-3 pt-1 space-y-3">
+                      <CardContent className="p-3 pt-1 flex-1 overflow-auto">
                         <div className="space-y-2">
                           {/* Sample uploaded media items */}
                           <div className="flex items-start gap-2 p-2 rounded-lg hover:bg-slate-800 transition-colors">
@@ -497,89 +560,146 @@ export default function Dashboard() {
                             </div>
                           </div>
                         </div>
+                      </CardContent>
+                      <div className="p-3 pt-0">
                         <Button variant="outline" className="w-full">
                           Upload Media
                         </Button>
-                      </CardContent>
-                    </div>
-                  </Card>
-                ) : (
-                  <Card className="col-span-2 bg-gradient-to-r from-sky-950 to-slate-950 border-0">
-                    <CardContent className="p-4">
-                      <div className="text-center">
-                        <h2 className="text-lg font-bold text-white mb-1">
-                          {currentCampaign.name}
-                        </h2>
-                        <p className="text-sm text-slate-300 line-clamp-1">
-                          {currentCampaign.description}
-                        </p>
                       </div>
-                    </CardContent>
+                    </div>
                   </Card>
                 )}
 
+                <Card
+                  className={`${
+                    currentCampaign.status === "live" ? "col-span-2" : "hidden"
+                  } bg-gradient-to-r from-sky-950 to-slate-950 border-0`}
+                >
+                  <CardContent className="p-4">
+                    <div className="text-center">
+                      <h2 className="text-lg font-bold text-white mb-1">
+                        {currentCampaign.name}
+                      </h2>
+                      <p className="text-sm text-slate-300 line-clamp-1">
+                        {currentCampaign.description}
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Second Row */}
                 {/* Stats Section */}
-                <div className="col-span-2 grid grid-cols-2 gap-4">
-                  {/* Total Impressions */}
-                  <Card className="bg-slate-950 border-slate-800 py-0 pb-2">
-                    <CardHeader className="p-3 pb-0">
-                      <CardTitle className="text-xs text-slate-400">
-                        Total Impressions
-                      </CardTitle>
-                      <CardDescription className="text-xl font-bold text-white">
-                        {formatNumber(currentCampaign.totalImpressions)}
-                      </CardDescription>
-                    </CardHeader>
-                  </Card>
+                {currentCampaign.status === "live" ? (
+                  <div className="col-span-2 grid grid-cols-2 gap-4">
+                    {/* Total Impressions */}
+                    <Card className="bg-slate-950 border-slate-800 py-0 pb-1">
+                      <CardHeader className="p-2 pb-0">
+                        <CardTitle className="text-xs text-slate-400">
+                          Total Impressions
+                        </CardTitle>
+                        <CardDescription className="text-xl font-bold text-white ">
+                          {formatNumber(currentCampaign.totalImpressions)}
+                        </CardDescription>
+                      </CardHeader>
+                    </Card>
 
-                  {/* Impressions per Play */}
-                  <Card className="bg-slate-950 border-slate-800 py-0 pb-2">
-                    <CardHeader className="p-3 pb-0">
-                      <CardTitle className="text-xs text-slate-400">
-                        Impressions per Play
-                      </CardTitle>
-                      <CardDescription className="text-xl font-bold text-white">
-                        {currentCampaign.impressionsPerPlay.toFixed(1)}
-                      </CardDescription>
-                    </CardHeader>
-                  </Card>
+                    {/* Impressions per Play */}
+                    <Card className="bg-slate-950 border-slate-800 py-0 pb-1">
+                      <CardHeader className="p-2 pb-0">
+                        <CardTitle className="text-xs text-slate-400">
+                          Impressions per Play
+                        </CardTitle>
+                        <CardDescription className="text-xl font-bold text-white">
+                          {currentCampaign.impressionsPerPlay.toFixed(1)}
+                        </CardDescription>
+                      </CardHeader>
+                    </Card>
 
-                  {/* Engagement Lift */}
-                  <Card className="bg-slate-950 border-slate-800 py-0 pb-2">
-                    <CardHeader className="p-3 pb-0">
-                      <CardTitle className="text-xs text-slate-400">
-                        Engagement Lift
-                      </CardTitle>
-                      <CardDescription className="text-xl font-bold text-green-500">
-                        +{currentCampaign.engagementLift.toFixed(1)}%
-                      </CardDescription>
-                    </CardHeader>
-                  </Card>
+                    {/* Engagement Lift */}
+                    <Card className="bg-slate-950 border-slate-800 py-0 pb-1">
+                      <CardHeader className="p-2 pb-0">
+                        <CardTitle className="text-xs text-slate-400">
+                          Engagement Lift
+                        </CardTitle>
+                        <CardDescription className="text-xl font-bold text-green-500">
+                          +{currentCampaign.engagementLift.toFixed(1)}%
+                        </CardDescription>
+                      </CardHeader>
+                    </Card>
 
-                  {/* Total Dwell Time */}
-                  <Card className="bg-slate-950 border-slate-800 py-0 pb-2">
-                    <CardHeader className="p-3 pb-0">
-                      <CardTitle className="text-xs text-slate-400">
-                        Total Dwell Time
-                      </CardTitle>
-                      <CardDescription className="text-xl font-bold text-white">
-                        {currentCampaign.totalDwellTime.toFixed(1)}s
-                      </CardDescription>
-                    </CardHeader>
-                  </Card>
+                    {/* Total Dwell Time */}
+                    <Card className="bg-slate-950 border-slate-800 py-0 pb-1">
+                      <CardHeader className="p-2 pb-0">
+                        <CardTitle className="text-xs text-slate-400">
+                          Total Dwell Time
+                        </CardTitle>
+                        <CardDescription className="text-xl font-bold text-white">
+                          {currentCampaign.totalDwellTime.toFixed(1)}s
+                        </CardDescription>
+                      </CardHeader>
+                    </Card>
+                  </div>
+                ) : (
+                  <div className="col-span-2 flex flex-col gap-4">
+                    {/* Stats cards row */}
+                    <div className="grid grid-cols-2 gap-4">
+                      {/* Total Impressions */}
+                      <Card className="bg-slate-950 border-slate-800 py-0 pb-1">
+                        <CardHeader className="p-2 pb-0">
+                          <CardTitle className="text-xs text-slate-400">
+                            Total Impressions
+                          </CardTitle>
+                          <CardDescription className="text-xl font-bold text-white">
+                            {formatNumber(currentCampaign.totalImpressions)}
+                          </CardDescription>
+                        </CardHeader>
+                      </Card>
 
-                  {/* Campaign Schedule - Only shown for upcoming campaigns */}
-                  {currentCampaign.status === "upcoming" && (
-                    <Card className="col-span-2 bg-slate-950 border-slate-800 py-0">
-                      <CardHeader className="p-3 pb-0">
+                      {/* Impressions per Play */}
+                      <Card className="bg-slate-950 border-slate-800 py-0 pb-1">
+                        <CardHeader className="p-2 pb-0">
+                          <CardTitle className="text-xs text-slate-400">
+                            Impressions per Play
+                          </CardTitle>
+                          <CardDescription className="text-xl font-bold text-white">
+                            {currentCampaign.impressionsPerPlay.toFixed(1)}
+                          </CardDescription>
+                        </CardHeader>
+                      </Card>
+
+                      {/* Engagement Lift */}
+                      <Card className="bg-slate-950 border-slate-800 py-0 pb-1">
+                        <CardHeader className="p-2 pb-0">
+                          <CardTitle className="text-xs text-slate-400">
+                            Engagement Lift
+                          </CardTitle>
+                          <CardDescription className="text-xl font-bold text-green-500">
+                            +{currentCampaign.engagementLift.toFixed(1)}%
+                          </CardDescription>
+                        </CardHeader>
+                      </Card>
+
+                      {/* Total Dwell Time */}
+                      <Card className="bg-slate-950 border-slate-800 py-0 pb-1">
+                        <CardHeader className="p-2 pb-0">
+                          <CardTitle className="text-xs text-slate-400">
+                            Total Dwell Time
+                          </CardTitle>
+                          <CardDescription className="text-xl font-bold text-white">
+                            {currentCampaign.totalDwellTime.toFixed(1)}s
+                          </CardDescription>
+                        </CardHeader>
+                      </Card>
+                    </div>
+
+                    {/* Campaign Schedule */}
+                    <Card className="bg-slate-950 border-slate-800 py-0 pb-1">
+                      <CardHeader className="p-2 pb-0">
                         <CardTitle className="text-lg">
                           Campaign Schedule
                         </CardTitle>
-                        <CardDescription>Campaign timeline</CardDescription>
-                      </CardHeader>
-                      <CardContent className="p-3">
-                        <div className="space-y-2">
-                          <div className="flex justify-between">
+                        <CardDescription className="pt-4 text-xl text-white space-y-2">
+                          <div className="flex justify-between items-center">
                             <span className="text-sm text-slate-400">
                               Start Date
                             </span>
@@ -587,7 +707,7 @@ export default function Dashboard() {
                               {currentCampaign.startDate}
                             </span>
                           </div>
-                          <div className="flex justify-between">
+                          <div className="flex justify-between items-center">
                             <span className="text-sm text-slate-400">
                               End Date
                             </span>
@@ -595,12 +715,13 @@ export default function Dashboard() {
                               {currentCampaign.endDate}
                             </span>
                           </div>
-                        </div>
-                      </CardContent>
+                        </CardDescription>
+                      </CardHeader>
                     </Card>
-                  )}
-                </div>
+                  </div>
+                )}
 
+                {/* Screen & Viewability and Platform Breakdown */}
                 <div className="col-span-2 space-y-4">
                   {/* Screen & Viewability */}
                   <Card className="bg-slate-950 border-slate-800 py-0 pb-4">
@@ -695,72 +816,7 @@ export default function Dashboard() {
                   </Card>
                 </div>
 
-                {/* Row 2: Projected Impressions (4), Region Distribution (2) */}
-                <Card className="col-span-4 bg-slate-950 border-slate-800 py-0">
-                  <CardHeader className="p-3 bg-gradient-to-r from-sky-950 to-slate-950 rounded-t-[13px]">
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <CardTitle className="text-xs text-slate-400">
-                          Daily Impressions
-                        </CardTitle>
-                        <p className="text-xs text-slate-500">
-                          All impressions over campaign duration
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm font-medium text-white">
-                          {formatNumber(currentCampaign.totalImpressions)}
-                        </p>
-                        <p className="text-xs text-slate-400">Impressions</p>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="p-3 pt-0 h-[180px]">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <LineChart
-                        data={dailyImpressions}
-                        margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
-                      >
-                        <XAxis
-                          dataKey="day"
-                          tick={{ fontSize: 10, fill: "#94a3b8" }}
-                          tickLine={{ stroke: "#475569" }}
-                          axisLine={{ stroke: "#475569" }}
-                        />
-                        <YAxis
-                          tick={{ fontSize: 10, fill: "#94a3b8" }}
-                          tickLine={{ stroke: "#475569" }}
-                          axisLine={{ stroke: "#475569" }}
-                          tickFormatter={(value) => `${value}M`}
-                          width={35}
-                        />
-                        <Tooltip
-                          contentStyle={{
-                            backgroundColor: "#1e293b",
-                            border: "none",
-                            borderRadius: "0.375rem",
-                            color: "#f8fafc",
-                            fontSize: "12px",
-                          }}
-                          formatter={(value: number) => [
-                            `${value}M`,
-                            "Impressions",
-                          ]}
-                          labelFormatter={(label) => `Day ${label}`}
-                        />
-                        <Line
-                          type="monotone"
-                          dataKey="impressions"
-                          stroke="hsl(199 95% 50%)"
-                          strokeWidth={2}
-                          dot={false}
-                          activeDot={{ r: 4, fill: "hsl(199 95% 50%)" }}
-                        />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </CardContent>
-                </Card>
-
+                {/* Region Distribution */}
                 <Card className="col-span-2 bg-slate-950 border-slate-800 py-0">
                   <CardHeader className="p-3 pb-0">
                     <CardTitle className="text-lg">
@@ -1011,9 +1067,13 @@ export default function Dashboard() {
                         left: tooltipInfo.position.x + 10,
                       }}
                     >
-                      <p className="font-medium">{tooltipInfo.campaign.name}</p>
+                      <p className="font-medium">
+                        {tooltipInfo.campaign?.name}
+                      </p>
                       <p className="text-sm text-slate-300">
-                        {formatNumber(tooltipInfo.campaign.totalImpressions)}{" "}
+                        {formatNumber(
+                          tooltipInfo.campaign?.totalImpressions || 0
+                        )}{" "}
                         impressions
                       </p>
                     </div>
