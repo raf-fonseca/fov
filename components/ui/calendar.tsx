@@ -18,12 +18,12 @@ function Calendar({
   return (
     <DayPicker
       showOutsideDays={showOutsideDays}
-      className={cn("p-3 w-full", className)}
+      className={cn("p-1 w-full", className)}
       classNames={{
-        months:
-          "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0 w-full justify-center",
-        month: "space-y-4 w-full",
-        caption: "flex justify-center pt-1 relative items-center",
+        root: "w-full",
+        months: "flex flex-col space-y-4 w-full",
+        month: "w-full",
+        caption: "flex justify-center pt-1 pb-4 relative items-center w-full",
         caption_label: "text-sm font-medium",
         nav: "space-x-1 flex items-center",
         nav_button: cn(
@@ -35,7 +35,7 @@ function Calendar({
         table: "w-full border-collapse space-y-1",
         head_row: "flex w-full",
         head_cell:
-          "text-slate-500 rounded-md w-full flex-1 font-normal text-[0.8rem] dark:text-slate-400",
+          "text-slate-500 rounded-md flex-1 font-normal text-[0.8rem] dark:text-slate-400",
         row: "flex w-full mt-2",
         cell: "flex-1 text-center text-sm p-0 relative [&:has([aria-selected].day-range-end)]:rounded-r-md [&:has([aria-selected].day-outside)]:bg-slate-100/50 [&:has([aria-selected])]:bg-slate-100 first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20 dark:[&:has([aria-selected].day-outside)]:bg-slate-800/50 dark:[&:has([aria-selected])]:bg-slate-800",
         day: cn(

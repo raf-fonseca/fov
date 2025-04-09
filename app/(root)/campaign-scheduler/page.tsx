@@ -1,8 +1,20 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ArrowRight, Calendar, Link, Lock, LockOpen } from "lucide-react";
+import {
+  ArrowRight,
+  Calendar,
+  Link as LinkIcon,
+  Lock,
+  LockOpen,
+  Check,
+  ChevronsUpDown,
+  X,
+  ArrowUp,
+  ArrowLeft,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
+import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -25,6 +37,19 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 export type Region = "US" | "EU" | "BR" | "ASIA" | "INTL";
 export type DeliverySpeed = "drip" | "balanced" | "burst";
@@ -131,9 +156,6 @@ export default function CampaignScheduler() {
   const [selectedGameIds, setSelectedGameIds] = useState<string[]>([
     "brainrot-boxfight",
   ]);
-
-  const [isImpressionsLocked, setIsImpressionsLocked] = useState(false);
-  const [isBudgetLocked, setIsBudgetLocked] = useState(false);
 
   // Sample data for other campaigns (in a real app, this would come from an API)
   const [otherCampaigns] = useState<Campaign[]>([
@@ -335,54 +357,128 @@ export default function CampaignScheduler() {
     }));
   };
 
-  return (
-    <div className="flex flex-col gap-6 mt-24 px-10 lg:px-20 pb-24">
-      <Card className="bg-[#151825] border-[#2a2d3a]">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5" />
-            Campaign Configuration
-          </CardTitle>
-          <CardDescription>Configure your ad campaign settings</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Campaign Settings Column */}
-            <div className="space-y-6">
-              <h3 className="text-lg font-medium">Campaign Settings</h3>
+  // Get a formatted string of selected regions
+  const getSelectedRegionsText = () => {
+    if (campaign.regions.length === 0) return "No regions selected";
+    if (campaign.regions.length === 5) return "All regions";
+    return campaign.regions.join(", ");
+  };
 
-              {/* Regions */}
-              <div className="space-y-3">
-                <label className="text-sm font-medium">Target Regions</label>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-2">
-                  {["US", "EU", "BR", "ASIA", "INTL"].map((region) => (
-                    <div key={region} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={region}
-                        checked={campaign.regions.includes(region as Region)}
-                        onCheckedChange={(checked) => {
-                          if (checked) {
-                            handleUpdateCampaign({
-                              regions: [...campaign.regions, region as Region],
-                            });
-                          } else {
-                            handleUpdateCampaign({
-                              regions: campaign.regions.filter(
-                                (r) => r !== region
-                              ),
-                            });
-                          }
-                        }}
-                      />
-                      <label
-                        htmlFor={region}
-                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+  const toggleRegion = (region: Region) => {
+    const isSelected = campaign.regions.includes(region);
+
+    if (isSelected) {
+      // Remove region
+      handleUpdateCampaign({
+        regions: campaign.regions.filter((r) => r !== region),
+      });
+    } else {
+      // Add region
+      handleUpdateCampaign({
+        regions: [...campaign.regions, region],
+      });
+    }
+  };
+
+  return (
+    <TooltipProvider>
+      <div className="flex flex-col gap-6 mt-24 px-10 lg:px-20 pb-24">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Campaign Settings Card */}
+          <Card className="bg-[#151825] border-[#2a2d3a]">
+            <CardHeader>
+              <CardTitle className="text-lg">Campaign Settings</CardTitle>
+              <CardDescription>Adjust your campaign parameters</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Regions - Dropdown Menu */}
+              <div className="space-y-3 flex flex-col">
+                <div className="flex items-center justify-between">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger className="bg-[#0a0c14] border-[#2a2d3a] text-left font-normal rounded-md p-2 flex items-center gap-2 w-40">
+                      <span>Target Regions</span>
+                      <ChevronsUpDown className="h-4 w-4 opacity-50 ml-auto" />
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="z-50 bg-[#18181A] border-none w-56 mt-2 rounded-sm text-white">
+                      {["US", "EU", "BR", "ASIA", "INTL"].map(
+                        (region, index) => {
+                          const isSelected = campaign.regions.includes(
+                            region as Region
+                          );
+                          return (
+                            <DropdownMenuItem
+                              key={region}
+                              onClick={() => toggleRegion(region as Region)}
+                              className={cn(
+                                "py-2 font-semibold flex items-center",
+                                index === 0 && "pt-4"
+                              )}
+                            >
+                              <div className="flex items-center gap-2">
+                                <div className="w-4 h-4 flex items-center justify-center">
+                                  {isSelected && <Check className="h-3 w-3" />}
+                                </div>
+                                <span>{region}</span>
+                              </div>
+                            </DropdownMenuItem>
+                          );
+                        }
+                      )}
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        onClick={() =>
+                          handleUpdateCampaign({
+                            regions: ["US", "EU", "BR", "ASIA", "INTL"],
+                          })
+                        }
+                        className="pt-2 pb-2 font-semibold"
+                      >
+                        Select All
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => handleUpdateCampaign({ regions: [] })}
+                        className="pt-2 pb-4 font-semibold"
+                      >
+                        Clear Selection
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+
+                  {campaign.regions.length > 0 && (
+                    <div className="flex items-center gap-1.5 ml-3">
+                      <div className="flex items-center justify-center bg-green-100 text-green-700 rounded-full p-1 bg-green-300/30">
+                        <ArrowUp
+                          className="h-3 w-3 transform text-green-400"
+                          strokeWidth={3}
+                        />
+                      </div>
+                      <span className="text-green-400 font-medium">
+                        +${campaign.regions.length * 100}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Selected Regions Badges */}
+                {campaign.regions.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {campaign.regions.map((region) => (
+                      <Badge
+                        key={region}
+                        variant="outline"
+                        className="bg-primary-50 text-white flex items-center py-1 px-2 focus:ring-0 focus:ring-offset-0 focus-visible:outline-none"
                       >
                         {region}
-                      </label>
-                    </div>
-                  ))}
-                </div>
+                        <button
+                          onClick={() => toggleRegion(region)}
+                          className="ml-1.5 bg-primary-50 rounded-full p-0.5 hover:bg-primary-50/20 p-0 focus:outline-none focus:ring-0"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </Badge>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Campaign Duration */}
@@ -402,7 +498,7 @@ export default function CampaignScheduler() {
                       }}
                     />
                   </div>
-                  <span className="text-sm font-medium w-12">
+                  <span className="text-sm font-medium ">
                     {campaign.days} days
                   </span>
                 </div>
@@ -414,88 +510,84 @@ export default function CampaignScheduler() {
                   <label className="text-sm font-medium">
                     Target Impressions
                   </label>
-                  <div className="flex items-center gap-2">
-                    <Input
-                      type="text"
-                      value={campaign.impressions.toLocaleString()}
-                      onChange={(e) => {
-                        const newImpressions = parseInt(
-                          e.target.value.replace(/,/g, "")
-                        );
-                        if (!isNaN(newImpressions)) {
-                          handleUpdateCampaign({ impressions: newImpressions });
-                        }
-                      }}
-                      className="bg-[#0a0c14] border-[#2a2d3a]"
-                      disabled={isImpressionsLocked}
-                    />
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className={cn(
-                        "h-8 w-8 p-0",
-                        isImpressionsLocked && "text-blue-500"
-                      )}
-                      onClick={() =>
-                        setIsImpressionsLocked(!isImpressionsLocked)
-                      }
-                    >
-                      {isImpressionsLocked ? (
-                        <LockOpen className="h-4 w-4" />
-                      ) : (
-                        <Lock className="h-4 w-4" />
-                      )}
-                    </Button>
-                  </div>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="relative">
+                        <Input
+                          type="text"
+                          disabled
+                          value={campaign.impressions.toLocaleString()}
+                          onChange={(e) => {
+                            const newImpressions = parseInt(
+                              e.target.value.replace(/,/g, "")
+                            );
+                            if (!isNaN(newImpressions)) {
+                              handleUpdateCampaign({
+                                impressions: newImpressions,
+                              });
+                            }
+                          }}
+                          className="bg-[#0a0c14] border-[#2a2d3a] cursor-not-allowed"
+                        />
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent className="bg-[#1a1d2d] border-[#2a2d3a] text-white p-0">
+                      <Link href="/campaign-builder">
+                        <Button
+                          variant="ghost"
+                          className="w-full flex items-center justify-start gap-2 text-white hover:bg-slate-800 hover:text-white py-3"
+                        >
+                          <ArrowLeft className="h-4 w-4" />
+                          <span>
+                            Go to Campaign Builder to adjust impressions
+                          </span>
+                        </Button>
+                      </Link>
+                    </TooltipContent>
+                  </Tooltip>
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium ml-4">Budget</label>
+                  <label className="text-sm font-medium">Budget</label>
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-gray-400">$</span>
-                    <Input
-                      type="text"
-                      value={calculatePrice().toLocaleString()}
-                      onChange={(e) => {
-                        const newBudget = parseInt(
-                          e.target.value.replace(/,/g, "")
-                        );
-                        if (!isNaN(newBudget)) {
-                          const newImpressions = Math.floor(newBudget / 0.001);
-                          handleUpdateCampaign({ impressions: newImpressions });
-                        }
-                      }}
-                      className="bg-[#0a0c14] border-[#2a2d3a]"
-                      disabled={isBudgetLocked}
-                    />
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className={cn(
-                        "h-8 w-8 p-0",
-                        isBudgetLocked && "text-blue-500"
-                      )}
-                      onClick={() => setIsBudgetLocked(!isBudgetLocked)}
-                    >
-                      {isBudgetLocked ? (
-                        <LockOpen className="h-4 w-4" />
-                      ) : (
-                        <Lock className="h-4 w-4" />
-                      )}
-                    </Button>
+                    <div className="relative w-full">
+                      <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+                        $
+                      </span>
+                      <Input
+                        type="text"
+                        value={calculatePrice().toLocaleString()}
+                        onChange={(e) => {
+                          const newBudget = parseInt(
+                            e.target.value.replace(/,/g, "")
+                          );
+                          if (!isNaN(newBudget)) {
+                            const newImpressions = Math.floor(
+                              newBudget / 0.001
+                            );
+                            handleUpdateCampaign({
+                              impressions: newImpressions,
+                            });
+                          }
+                        }}
+                        className="bg-[#0a0c14] border-[#2a2d3a] pl-7"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
+            </CardContent>
+          </Card>
 
-            {/* Campaign Schedule Column */}
-            <div className="space-y-6">
-              <div className="flex justify-between items-center">
-                <h3 className="text-lg font-medium">Campaign Schedule</h3>
+          {/* Campaign Schedule Card */}
+          <Card className="bg-[#151825] border-[#2a2d3a]">
+            <CardHeader className="flex flex-col gap-2">
+              <div className="flex w-full justify-between items-center">
+                <CardTitle className="text-lg">Campaign Schedule</CardTitle>
                 <Button
                   variant="outline"
                   size="sm"
-                  className="hover:cursor-pointer"
+                  className="hover:cursor-pointer ml-auto"
                   onClick={() =>
                     setCampaign((prev) => ({ ...prev, selectedDates: [] }))
                   }
@@ -503,7 +595,12 @@ export default function CampaignScheduler() {
                   Reset
                 </Button>
               </div>
-
+              <CardDescription>
+                The dates for your campaign will be automatically set based on
+                the campaign settings you have set
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
               <div className="bg-[#0a0c14] rounded-lg p-4 w-full">
                 <CalendarComponent
                   mode="multiple"
@@ -518,24 +615,24 @@ export default function CampaignScheduler() {
                   }}
                 />
               </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
+        </div>
 
-      {/* Sticky bottom section */}
-      <div className="fixed bottom-0 left-0 right-0 bg-slate-950 border-t border-slate-800 z-50">
-        <div className="max-w-[1200px] mx-auto px-10 lg:px-20 py-4">
-          <div className="flex justify-end">
-            {/* <Link href="/campaign-scheduler"> */}
-            <Button className="bg-primary-50 hover:bg-primary-50/70 px-8 text-white">
-              Continue to Payment
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-            {/* </Link> */}
+        {/* Sticky bottom section */}
+        <div className="fixed bottom-0 left-0 right-0 bg-slate-950 border-t border-slate-800 z-50">
+          <div className="max-w-[1200px] mx-auto px-10 lg:px-20 py-4">
+            <div className="flex justify-end">
+              {/* <Link href="/campaign-scheduler"> */}
+              <Button className="bg-primary-50 hover:bg-primary-50/70 px-8 text-white">
+                Continue to Payment
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+              {/* </Link> */}
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </TooltipProvider>
   );
 }
