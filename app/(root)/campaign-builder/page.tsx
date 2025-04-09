@@ -185,16 +185,17 @@ export default function CampaignBuilder() {
   const handleTotalImpressionsChange = (
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
-    const value = e.target.value;
-    setTempTotalImpressions(value);
+    // Remove commas to get the actual numeric value
+    const rawValue = e.target.value.replace(/,/g, "");
+    setTempTotalImpressions(rawValue);
 
     // Validation happens during input as well
-    if (value === "") {
+    if (rawValue === "") {
       setInputError("");
       return;
     }
 
-    const numValue = parseFloat(value);
+    const numValue = parseFloat(rawValue);
 
     if (isNaN(numValue)) {
       setInputError("Please enter a valid number");
@@ -373,11 +374,55 @@ export default function CampaignBuilder() {
 
     // Close the dialog
     handleDialogClose();
+
+    // Scroll to the top of the page
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
+
+    // Add a small delay and focus on the input field if possible
+    setTimeout(() => {
+      const inputElement = document.querySelector(
+        'input[value="' + newTotal + '"]'
+      );
+      if (inputElement instanceof HTMLElement) {
+        inputElement.focus();
+      }
+    }, 500);
   };
 
   const handleDialogClose = () => {
     setDialogOpen(false);
     setActiveSlotId(null);
+  };
+
+  // Helper function to format numbers with suffixes
+  const formatNumberWithSuffix = (num: number): string => {
+    if (num === 0) return "0";
+
+    const abbreviations = [
+      { value: 1e9, symbol: "B" },
+      { value: 1e6, symbol: "M" },
+      { value: 1e3, symbol: "K" },
+    ];
+
+    const abbreviation = abbreviations.find((abbr) => num >= abbr.value);
+
+    if (abbreviation) {
+      const value = num / abbreviation.value;
+      // If the value has decimal places, show one decimal place, otherwise show whole number
+      return value % 1 === 0
+        ? `${value.toFixed(0)}${abbreviation.symbol}`
+        : `${value.toFixed(1)}${abbreviation.symbol}`;
+    }
+
+    return num.toString();
+  };
+
+  // Helper function to format number with commas
+  const formatNumberWithCommas = (num: number): string => {
+    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
   };
 
   return (
@@ -400,7 +445,7 @@ export default function CampaignBuilder() {
                       <Input
                         value={
                           isConfirmed
-                            ? totalImpressions || ""
+                            ? formatNumberWithCommas(totalImpressions)
                             : tempTotalImpressions
                         }
                         onChange={handleTotalImpressionsChange}
@@ -489,23 +534,25 @@ export default function CampaignBuilder() {
                             <span>Impression Range</span>
                             {isConfirmed ? (
                               <span className="text-white">
-                                {(isDragging && activeSlotId === slot.id
-                                  ? newValues[0]
-                                  : isShadowActive
-                                  ? shadowImpressions[slot.id]?.[0] ??
-                                    slot.impressions[0]
-                                  : impressionRanges[slot.id]?.[0] ??
-                                    slot.impressions[0]
-                                ).toFixed(0)}
+                                {formatNumberWithSuffix(
+                                  isDragging && activeSlotId === slot.id
+                                    ? newValues[0]
+                                    : isShadowActive
+                                    ? shadowImpressions[slot.id]?.[0] ??
+                                      slot.impressions[0]
+                                    : impressionRanges[slot.id]?.[0] ??
+                                      slot.impressions[0]
+                                )}
                                 -
-                                {(isDragging && activeSlotId === slot.id
-                                  ? newValues[1]
-                                  : isShadowActive
-                                  ? shadowImpressions[slot.id]?.[1] ??
-                                    slot.impressions[1]
-                                  : impressionRanges[slot.id]?.[1] ??
-                                    slot.impressions[1]
-                                ).toFixed(0)}
+                                {formatNumberWithSuffix(
+                                  isDragging && activeSlotId === slot.id
+                                    ? newValues[1]
+                                    : isShadowActive
+                                    ? shadowImpressions[slot.id]?.[1] ??
+                                      slot.impressions[1]
+                                    : impressionRanges[slot.id]?.[1] ??
+                                      slot.impressions[1]
+                                )}
                               </span>
                             ) : (
                               <span className="text-slate-500">Not set</span>
