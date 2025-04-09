@@ -20,6 +20,7 @@ export interface Campaign {
   selectedDates: Date[];
   selectedTimePeriods: TimeSlot[];
 }
+
 export type CalendarView = "day" | "week" | "month";
 
 export type GameInfo = {

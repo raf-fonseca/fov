@@ -29,8 +29,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
 import { GameInfo } from "@/app/types";
-import { Calendar as CalendarComponent } from "@/components/ui/calendar";
-import { format } from "date-fns";
+import { format, addDays, differenceInDays } from "date-fns";
 import {
   Popover,
   PopoverContent,
@@ -50,6 +49,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { DateRangeCalendar } from "@/components/date-range-calendar";
 
 export type Region = "US" | "EU" | "BR" | "ASIA" | "INTL";
 export type DeliverySpeed = "drip" | "balanced" | "burst";
@@ -72,6 +72,7 @@ export interface Campaign {
   color: string;
   selectedDates: Date[];
   selectedTimePeriods: TimeSlot[];
+  dateRange: { start: Date | null; end: Date | null };
 }
 
 // Sample game data with thumbnails
@@ -139,6 +140,7 @@ const GAMES: GameInfo[] = [
 ];
 
 export default function CampaignScheduler() {
+  const today = new Date();
   const [campaign, setCampaign] = useState<Campaign>({
     id: "camp-1",
     name: "New Campaign",
@@ -151,6 +153,10 @@ export default function CampaignScheduler() {
     color: "#3b82f6",
     selectedDates: [],
     selectedTimePeriods: [],
+    dateRange: {
+      start: today,
+      end: addDays(today, 7),
+    },
   });
 
   const [selectedGameIds, setSelectedGameIds] = useState<string[]>([
@@ -177,6 +183,10 @@ export default function CampaignScheduler() {
         new Date(2025, 2, 19),
       ],
       selectedTimePeriods: [],
+      dateRange: {
+        start: new Date(2025, 2, 15),
+        end: new Date(2025, 2, 19),
+      },
     },
     {
       id: "camp-3",
@@ -199,97 +209,38 @@ export default function CampaignScheduler() {
         new Date(2025, 2, 27),
       ],
       selectedTimePeriods: [],
+      dateRange: {
+        start: new Date(2025, 2, 20),
+        end: new Date(2025, 2, 27),
+      },
     },
   ]);
 
-  // New state for the date selection
-  const [date, setDate] = useState<Date | undefined>(new Date());
+  // Calculate days based on selected range
+  useEffect(() => {
+    if (campaign.dateRange?.start && campaign.dateRange?.end) {
+      // Calculate days between start and end dates (inclusive)
+      const daysDiff =
+        differenceInDays(campaign.dateRange.end, campaign.dateRange.start) + 1;
 
-  // Handle date selection
-  const handleDateSelect = (selectedDate: Date | undefined) => {
-    if (!selectedDate) return;
-
-    setDate(selectedDate);
-
-    // Add the date to campaign if it doesn't exist
-    if (
-      !campaign.selectedDates.some(
-        (d) =>
-          d.getDate() === selectedDate.getDate() &&
-          d.getMonth() === selectedDate.getMonth() &&
-          d.getFullYear() === selectedDate.getFullYear()
-      )
-    ) {
+      // Update campaign days
       setCampaign((prev) => ({
         ...prev,
-        selectedDates: [...prev.selectedDates, selectedDate],
-        days: prev.selectedDates.length + 1,
+        days: daysDiff,
       }));
-    } else {
-      // Remove the date if it already exists
-      setCampaign((prev) => {
-        const filteredDates = prev.selectedDates.filter(
-          (d) =>
-            !(
-              d.getDate() === selectedDate.getDate() &&
-              d.getMonth() === selectedDate.getMonth() &&
-              d.getFullYear() === selectedDate.getFullYear()
-            )
-        );
-        return {
-          ...prev,
-          selectedDates: filteredDates,
-          days: filteredDates.length,
-        };
-      });
     }
-  };
+  }, [campaign.dateRange]);
 
-  // Calculate days based on impressions and game
-  useEffect(() => {
-    const selectedGame = GAMES.find((g) => g.id === campaign.gameId);
-    if (selectedGame) {
-      // Calculate average monthly impressions from the range
-      const [minImpressions, maxImpressions] = selectedGame.monthlyImpressions
-        .split(" - ")
-        .map((imp) => {
-          const value = parseFloat(imp.replace(/[^0-9.]/g, ""));
-          return imp.includes("B") ? value * 1000000000 : value * 1000000;
-        });
-      const averageMonthlyImpressions = (minImpressions + maxImpressions) / 2;
-
-      // Calculate daily impressions (average monthly / 30)
-      const dailyImpressions = averageMonthlyImpressions / 30;
-
-      // Calculate minimum days needed based on daily impressions
-      const minimumDays = Math.ceil(campaign.impressions / dailyImpressions);
-
-      // If no dates are selected yet, auto-populate the calendar
-      if (campaign.selectedDates.length === 0) {
-        const today = new Date();
-        const dates = Array.from({ length: minimumDays }, (_, i) => {
-          const date = new Date(today);
-          date.setDate(today.getDate() + i);
-          return date;
-        });
-
-        setCampaign((prev) => ({
-          ...prev,
-          days: minimumDays,
-          selectedDates: dates,
-        }));
-      }
-    }
-  }, [campaign.impressions, campaign.gameId, campaign.selectedDates.length]);
-
-  // Calculate price based on selected dates
+  // Calculate price based on selected date range
   const calculatePrice = () => {
     const selectedGame = GAMES.find((g) => g.id === campaign.gameId);
     if (!selectedGame) return 0;
 
     const basePrice = campaign.impressions * 0.001; // $0.001 per impression
+
+    // Days multiplier based on date range
     const daysMultiplier =
-      campaign.selectedDates.length /
+      campaign.days /
       Math.ceil(campaign.impressions / selectedGame.dailyImpressions);
 
     // Price increases if fewer days are selected
@@ -302,7 +253,7 @@ export default function CampaignScheduler() {
     setCampaign((prev) => {
       const newCampaign = { ...prev, ...updates };
 
-      // If impressions are being updated, recalculate the dates
+      // If impressions are being updated, recalculate the days if needed
       if (updates.impressions !== undefined) {
         const selectedGame = GAMES.find((g) => g.id === newCampaign.gameId);
         if (selectedGame) {
@@ -321,23 +272,21 @@ export default function CampaignScheduler() {
           // Calculate minimum days needed based on daily impressions
           const minimumDays = Math.ceil(updates.impressions / dailyImpressions);
 
-          // If we need more days than currently selected, add them
-          if (minimumDays > newCampaign.selectedDates.length) {
-            const lastDate =
-              newCampaign.selectedDates[newCampaign.selectedDates.length - 1] ||
-              new Date();
-            const newDates = Array.from(
-              { length: minimumDays - newCampaign.selectedDates.length },
-              (_, i) => {
-                const date = new Date(lastDate);
-                date.setDate(lastDate.getDate() + i + 1);
-                return date;
-              }
-            );
+          // If we need more days than currently selected, extend the date range
+          if (
+            !newCampaign.dateRange?.start ||
+            !newCampaign.dateRange?.end ||
+            newCampaign.days < minimumDays
+          ) {
+            const startDate = newCampaign.dateRange?.start || new Date();
+            const endDate = addDays(startDate, minimumDays - 1);
 
             return {
               ...newCampaign,
-              selectedDates: [...newCampaign.selectedDates, ...newDates],
+              dateRange: {
+                start: startDate,
+                end: endDate,
+              },
               days: minimumDays,
             };
           }
@@ -347,6 +296,33 @@ export default function CampaignScheduler() {
       return newCampaign;
     });
   };
+
+  // Update the days when campaign.impressions changes
+  useEffect(() => {
+    const selectedGame = GAMES.find((g) => g.id === campaign.gameId);
+    if (
+      selectedGame &&
+      (!campaign.dateRange.start || !campaign.dateRange.end)
+    ) {
+      // If no date range is set, calculate one based on impressions
+      const dailyImpressions = selectedGame.dailyImpressions;
+      const minimumDays = Math.ceil(campaign.impressions / dailyImpressions);
+
+      const startDate = new Date();
+      const endDate = addDays(startDate, minimumDays - 1);
+
+      setCampaign((prev) => ({
+        ...prev,
+        dateRange: {
+          start: startDate,
+          end: endDate,
+        },
+        days: minimumDays,
+      }));
+    }
+    // Return void to satisfy EffectCallback
+    return;
+  }, [campaign.impressions, campaign.gameId]);
 
   const handleTimePeriodSelect = (timeSlots: TimeSlot[]) => {
     setCampaign((prev) => ({
@@ -380,6 +356,17 @@ export default function CampaignScheduler() {
     }
   };
 
+  // Handle date range selection
+  const handleDateRangeSelect = (range: {
+    start: Date | null;
+    end: Date | null;
+  }) => {
+    setCampaign((prev) => ({
+      ...prev,
+      dateRange: range,
+    }));
+  };
+
   return (
     <TooltipProvider>
       <div className="flex flex-col gap-6 mt-24 px-10 lg:px-20 pb-24">
@@ -395,7 +382,7 @@ export default function CampaignScheduler() {
               <div className="space-y-3 flex flex-col">
                 <div className="flex items-center justify-between">
                   <DropdownMenu>
-                    <DropdownMenuTrigger className="bg-[#0a0c14] border-[#2a2d3a] text-left font-normal rounded-md p-2 flex items-center gap-2 w-40">
+                    <DropdownMenuTrigger className=" bg-slate-950 border border-slate-800 text-left font-normal rounded-md p-2 flex items-center gap-2 w-40  ">
                       <span>Target Regions</span>
                       <ChevronsUpDown className="h-4 w-4 opacity-50 ml-auto" />
                     </DropdownMenuTrigger>
@@ -495,6 +482,21 @@ export default function CampaignScheduler() {
                       step={1}
                       onValueChange={(value) => {
                         handleUpdateCampaign({ days: value[0] });
+
+                        // Update end date if start date exists
+                        if (campaign.dateRange.start) {
+                          const newEndDate = addDays(
+                            campaign.dateRange.start,
+                            value[0] - 1
+                          );
+                          setCampaign((prev) => ({
+                            ...prev,
+                            dateRange: {
+                              ...prev.dateRange,
+                              end: newEndDate,
+                            },
+                          }));
+                        }
                       }}
                     />
                   </div>
@@ -589,30 +591,29 @@ export default function CampaignScheduler() {
                   size="sm"
                   className="hover:cursor-pointer ml-auto"
                   onClick={() =>
-                    setCampaign((prev) => ({ ...prev, selectedDates: [] }))
+                    setCampaign((prev) => ({
+                      ...prev,
+                      dateRange: {
+                        start: null,
+                        end: null,
+                      },
+                      days: 7,
+                    }))
                   }
                 >
                   Reset
                 </Button>
               </div>
               <CardDescription>
-                The dates for your campaign will be automatically set based on
-                the campaign settings you have set
+                Select a start and end date for your campaign.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="bg-[#0a0c14] rounded-lg p-4 w-full">
-                <CalendarComponent
-                  mode="multiple"
-                  selected={campaign.selectedDates}
-                  onSelect={(dates) => {
-                    if (!Array.isArray(dates)) return;
-                    setCampaign((prev) => ({
-                      ...prev,
-                      selectedDates: dates,
-                      days: dates.length,
-                    }));
-                  }}
+              <div className="bg-slate-950 border border-slate-800 rounded-lg w-full">
+                <DateRangeCalendar
+                  onRangeSelect={handleDateRangeSelect}
+                  initialRange={campaign.dateRange}
+                  className="bg-slate-950 text-white border-slate-800"
                 />
               </div>
             </CardContent>
