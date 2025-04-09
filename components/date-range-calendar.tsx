@@ -8,12 +8,14 @@ interface CalendarProps {
   className?: string;
   onRangeSelect?: (range: { start: Date | null; end: Date | null }) => void;
   initialRange?: { start: Date | null; end: Date | null };
+  readOnly?: boolean;
 }
 
 export function DateRangeCalendar({
   className,
   onRangeSelect,
   initialRange = { start: null, end: null },
+  readOnly = true, // Default to read-only mode
 }: CalendarProps) {
   const [currentMonth, setCurrentMonth] = useState<Date>(() => {
     // Set current month to the month of initialRange.start if available
@@ -42,9 +44,11 @@ export function DateRangeCalendar({
   useEffect(() => {
     setSelectedRange(initialRange);
 
-    // If initialRange has a start date, focus the calendar on that month
+    // Always update currentMonth when initialRange changes to ensure we display the correct month
     if (initialRange?.start) {
       setCurrentMonth(new Date(initialRange.start));
+    } else if (initialRange?.end) {
+      setCurrentMonth(new Date(initialRange.end));
     }
 
     // Update selection mode based on the range
@@ -140,6 +144,8 @@ export function DateRangeCalendar({
 
   // Handle date selection
   const handleDateClick = (date: Date) => {
+    if (readOnly) return; // Don't allow selection in read-only mode
+
     if (selectionMode === "start") {
       // Start new selection
       const newRange = { start: date, end: null };
@@ -182,7 +188,26 @@ export function DateRangeCalendar({
   // Check if a date is within the selected range
   const isInRange = (date: Date) => {
     if (!selectedRange.start || !selectedRange.end) return false;
-    return date > selectedRange.start && date < selectedRange.end;
+
+    // Create date objects with time set to midnight to ensure proper comparison
+    const dateNormalized = new Date(
+      date.getFullYear(),
+      date.getMonth(),
+      date.getDate()
+    );
+    const startNormalized = new Date(
+      selectedRange.start.getFullYear(),
+      selectedRange.start.getMonth(),
+      selectedRange.start.getDate()
+    );
+    const endNormalized = new Date(
+      selectedRange.end.getFullYear(),
+      selectedRange.end.getMonth(),
+      selectedRange.end.getDate()
+    );
+
+    // Check if date is strictly between start and end (not including those dates)
+    return dateNormalized > startNormalized && dateNormalized < endNormalized;
   };
 
   // Get position info for styling the range
@@ -192,7 +217,7 @@ export function DateRangeCalendar({
     const isFirstDay =
       date.toDateString() === selectedRange.start.toDateString();
     const isLastDay = date.toDateString() === selectedRange.end.toDateString();
-    const isInBetween = date > selectedRange.start && date < selectedRange.end;
+    const isInBetween = isInRange(date);
 
     // Calculate week boundaries
     const isStartOfWeek = index % 7 === 0;
@@ -204,16 +229,12 @@ export function DateRangeCalendar({
     const nextDate = new Date(date);
     nextDate.setDate(date.getDate() + 1);
 
-    const isPrevInRange =
-      prevDate >= selectedRange.start && prevDate <= selectedRange.end;
-    const isNextInRange =
-      nextDate >= selectedRange.start && nextDate <= selectedRange.end;
+    const isPrevInRange = isInRange(prevDate) || isStartDate(prevDate);
+    const isNextInRange = isInRange(nextDate) || isEndDate(nextDate);
 
     // Check if previous or next date is start/end
-    const prevIsStart =
-      prevDate.toDateString() === selectedRange.start.toDateString();
-    const nextIsEnd =
-      nextDate.toDateString() === selectedRange.end.toDateString();
+    const prevIsStart = isStartDate(prevDate);
+    const nextIsEnd = isEndDate(nextDate);
 
     return {
       isFirstDay,
@@ -238,7 +259,12 @@ export function DateRangeCalendar({
       <div className="flex items-center justify-between mb-4">
         <button
           onClick={goToPreviousMonth}
-          className="p-2 rounded-md text-slate-400 hover:bg-[#2a2d3a] hover:text-white"
+          className={cn(
+            "p-2 rounded-md text-slate-400",
+            !readOnly && "hover:bg-[#2a2d3a] hover:text-white",
+            readOnly && "opacity-50 cursor-not-allowed"
+          )}
+          disabled={readOnly}
           aria-label="Previous month"
         >
           <ChevronLeft className="h-5 w-5" />
@@ -248,7 +274,12 @@ export function DateRangeCalendar({
         </h2>
         <button
           onClick={goToNextMonth}
-          className="p-2 rounded-md text-slate-400 hover:bg-[#2a2d3a] hover:text-white"
+          className={cn(
+            "p-2 rounded-md text-slate-400",
+            !readOnly && "hover:bg-[#2a2d3a] hover:text-white",
+            readOnly && "opacity-50 cursor-not-allowed"
+          )}
+          disabled={readOnly}
           aria-label="Next month"
         >
           <ChevronRight className="h-5 w-5" />
@@ -292,18 +323,21 @@ export function DateRangeCalendar({
                 <div className="absolute left-0 top-0 bottom-0 w-1/2 bg-[#3b82f6]/10 z-0" />
               )}
 
-              <button
-                onClick={() => handleDateClick(day.date)}
+              <div
                 className={cn(
-                  "h-10 w-10 flex items-center justify-center relative hover:bg-[#2a2d3a] hover:text-white rounded-md transition-colors",
+                  "h-10 w-10 flex items-center justify-center relative rounded-md transition-colors",
                   !day.isCurrentMonth && "text-slate-600",
                   day.isCurrentMonth && !isStart && !isEnd && "text-slate-300",
                   (isStart || isEnd) && "text-white",
                   // Start date styling
-                  isStart && "bg-[#3b82f6] hover:bg-[#3b82f6] rounded-lg z-10",
+                  isStart && "bg-[#3b82f6] rounded-lg z-10",
                   // End date styling
-                  isEnd && "bg-[#3b82f6] hover:bg-[#3b82f6] rounded-lg z-10"
+                  isEnd && "bg-[#3b82f6] rounded-lg z-10",
+                  // Remove hover effects in read-only mode
+                  !readOnly &&
+                    "hover:bg-[#2a2d3a] hover:text-white cursor-pointer"
                 )}
+                onClick={readOnly ? undefined : () => handleDateClick(day.date)}
               >
                 <span className="relative z-10">{day.dayOfMonth}</span>
 
@@ -311,7 +345,7 @@ export function DateRangeCalendar({
                 {isToday && (
                   <span className="absolute bottom-0.5 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-white rounded-full" />
                 )}
-              </button>
+              </div>
             </div>
           );
         })}

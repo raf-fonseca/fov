@@ -155,7 +155,7 @@ export default function CampaignScheduler() {
     selectedTimePeriods: [],
     dateRange: {
       start: today,
-      end: addDays(today, 7),
+      end: addDays(today, 6),
     },
   });
 
@@ -168,7 +168,7 @@ export default function CampaignScheduler() {
     {
       id: "camp-2",
       name: "Nike Campaign",
-      days: 14,
+      days: 7,
       impressions: 8000000,
       regions: ["US", "EU"],
       deliverySpeed: "burst",
@@ -181,17 +181,19 @@ export default function CampaignScheduler() {
         new Date(2025, 2, 17),
         new Date(2025, 2, 18),
         new Date(2025, 2, 19),
+        new Date(2025, 2, 20),
+        new Date(2025, 2, 21),
       ],
       selectedTimePeriods: [],
       dateRange: {
         start: new Date(2025, 2, 15),
-        end: new Date(2025, 2, 19),
+        end: new Date(2025, 2, 21),
       },
     },
     {
       id: "camp-3",
       name: "Coca-Cola Campaign",
-      days: 10,
+      days: 7,
       impressions: 6000000,
       regions: ["US", "BR"],
       deliverySpeed: "balanced",
@@ -206,12 +208,11 @@ export default function CampaignScheduler() {
         new Date(2025, 2, 24),
         new Date(2025, 2, 25),
         new Date(2025, 2, 26),
-        new Date(2025, 2, 27),
       ],
       selectedTimePeriods: [],
       dateRange: {
         start: new Date(2025, 2, 20),
-        end: new Date(2025, 2, 27),
+        end: new Date(2025, 2, 26),
       },
     },
   ]);
@@ -589,16 +590,24 @@ export default function CampaignScheduler() {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="hover:cursor-pointer ml-auto"
+                  className={cn(
+                    "hover:cursor-pointer ml-auto",
+                    campaign.days === 7 && "opacity-50 cursor-not-allowed"
+                  )}
+                  disabled={campaign.days === 7}
                   onClick={() =>
-                    setCampaign((prev) => ({
-                      ...prev,
-                      dateRange: {
-                        start: null,
-                        end: null,
-                      },
-                      days: 7,
-                    }))
+                    setCampaign((prev) => {
+                      // Set to 7 days starting from today or current start date
+                      const startDate = prev.dateRange.start || today;
+                      return {
+                        ...prev,
+                        dateRange: {
+                          start: startDate,
+                          end: addDays(startDate, 6), // 7 days total (start date + 6 days)
+                        },
+                        days: 7,
+                      };
+                    })
                   }
                 >
                   Reset
@@ -609,13 +618,25 @@ export default function CampaignScheduler() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="bg-slate-950 border border-slate-800 rounded-lg w-full">
-                <DateRangeCalendar
-                  onRangeSelect={handleDateRangeSelect}
-                  initialRange={campaign.dateRange}
-                  className="bg-slate-950 text-white border-slate-800"
-                />
-              </div>
+              <Tooltip delayDuration={0}>
+                <TooltipTrigger asChild>
+                  <div className="bg-slate-950 border border-slate-800 rounded-lg w-full">
+                    <DateRangeCalendar
+                      onRangeSelect={handleDateRangeSelect}
+                      initialRange={campaign.dateRange}
+                      className="bg-slate-950 text-white border-slate-800"
+                      readOnly={true}
+                    />
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  className="bg-[#1a1d2d] border-[#2a2d3a] text-white p-2 max-w-[250px]"
+                  side="top"
+                >
+                  Adjust the campaign settings to change your campaign date
+                  range
+                </TooltipContent>
+              </Tooltip>
             </CardContent>
           </Card>
         </div>
@@ -624,12 +645,10 @@ export default function CampaignScheduler() {
         <div className="fixed bottom-0 left-0 right-0 bg-slate-950 border-t border-slate-800 z-50">
           <div className="max-w-[1200px] mx-auto px-10 lg:px-20 py-4">
             <div className="flex justify-end">
-              {/* <Link href="/campaign-scheduler"> */}
               <Button className="bg-primary-50 hover:bg-primary-50/70 px-8 text-white">
                 Continue to Payment
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
-              {/* </Link> */}
             </div>
           </div>
         </div>
