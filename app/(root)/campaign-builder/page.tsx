@@ -107,15 +107,11 @@ export default function CampaignBuilder() {
 
   const [totalImpressions, setTotalImpressions] = useState<number>(0);
   const [minimumGuaranteed, setMinimumGuaranteed] = useState<number>(0);
-  const [shadowImpressions, setShadowImpressions] = useState<
-    Record<string, [number, number]>
-  >({});
-  const [isShadowActive, setIsShadowActive] = useState<boolean>(false);
   const [inputError, setInputError] = useState<string>("");
   const [isConfirmed, setIsConfirmed] = useState<boolean>(false);
   const [tempTotalImpressions, setTempTotalImpressions] = useState<string>("");
 
-  // Dialog-specific state (using Dialog instead of Sheet/Drawer)
+  // Dialog-specific state
   const [dialogOpen, setDialogOpen] = useState<boolean>(false);
   const [activeSlotId, setActiveSlotId] = useState<string | null>(null);
   const [originalValues, setOriginalValues] = useState<[number, number]>([
@@ -169,17 +165,10 @@ export default function CampaignBuilder() {
   };
 
   const updateSlotImpressions = (slotId: string, value: [number, number]) => {
-    if (!isShadowActive) {
-      setImpressionRanges((prev) => ({
-        ...prev,
-        [slotId]: value,
-      }));
-    } else {
-      setShadowImpressions((prev) => ({
-        ...prev,
-        [slotId]: value,
-      }));
-    }
+    setImpressionRanges((prev) => ({
+      ...prev,
+      [slotId]: value,
+    }));
   };
 
   const handleTotalImpressionsChange = (
@@ -244,22 +233,6 @@ export default function CampaignBuilder() {
     setTempTotalImpressions(totalImpressions.toString());
   };
 
-  const applyShadowChanges = () => {
-    setImpressionRanges(shadowImpressions);
-    setShadowImpressions({});
-    setIsShadowActive(false);
-  };
-
-  const cancelShadowChanges = () => {
-    setShadowImpressions({});
-    setIsShadowActive(false);
-  };
-
-  const startShadowMovement = () => {
-    setShadowImpressions({ ...impressionRanges });
-    setIsShadowActive(true);
-  };
-
   const removeAdSlot = (gameId: string, slotId: string) => {
     setGames(
       games.map((game) => {
@@ -281,14 +254,9 @@ export default function CampaignBuilder() {
       setActiveSlotId(slotId);
 
       // Store original value first
-      const originalValue = isShadowActive
-        ? shadowImpressions[slotId] ||
-          impressionRanges[slotId] ||
-          games.flatMap((g) => g.adSlots).find((s) => s.id === slotId)
-            ?.impressions || [0, 0]
-        : impressionRanges[slotId] ||
-          games.flatMap((g) => g.adSlots).find((s) => s.id === slotId)
-            ?.impressions || [0, 0];
+      const originalValue = impressionRanges[slotId] ||
+        games.flatMap((g) => g.adSlots).find((s) => s.id === slotId)
+          ?.impressions || [0, 0];
 
       setOriginalValues(originalValue);
     }
@@ -304,57 +272,13 @@ export default function CampaignBuilder() {
     }
   };
 
-  // For displaying the slider values correctly after confirmation
-  const getCurrentSliderValues = (slot: AdSlot) => {
-    if (isDragging && activeSlotId === slot.id) {
-      return [newValues[0], newValues[1]];
-    }
-
-    if (isShadowActive) {
-      return (
-        shadowImpressions[slot.id] ||
-        impressionRanges[slot.id] ||
-        slot.impressions
-      );
-    }
-
-    return impressionRanges[slot.id] || slot.impressions;
-  };
-
-  // Recalculate the slider scale value
-  const getSliderMax = () => {
-    // Get all slots
-    const allSlots = games.flatMap((game) => game.adSlots);
-    if (allSlots.length === 0) return 10;
-
-    // Find maximum impression value
-    let maxValue = 0;
-    allSlots.forEach((slot) => {
-      const values = impressionRanges[slot.id] || slot.impressions;
-      maxValue = Math.max(maxValue, values[1]);
-    });
-
-    // Add a buffer and round to a nice number
-    return Math.max(10, Math.ceil(maxValue * 1.2));
-  };
-
-  // Fixed max value for all sliders
-  const sliderMax = getSliderMax();
-
   // Dialog action handlers
   const applyRedistribute = () => {
     if (activeSlotId) {
-      if (isShadowActive) {
-        setShadowImpressions((prev) => ({
-          ...prev,
-          [activeSlotId]: newValues,
-        }));
-      } else {
-        setImpressionRanges((prev) => ({
-          ...prev,
-          [activeSlotId]: newValues,
-        }));
-      }
+      setImpressionRanges((prev) => ({
+        ...prev,
+        [activeSlotId]: newValues,
+      }));
     }
     handleDialogClose();
   };
@@ -537,40 +461,52 @@ export default function CampaignBuilder() {
                                 {formatNumberWithSuffix(
                                   isDragging && activeSlotId === slot.id
                                     ? newValues[0]
-                                    : isShadowActive
-                                    ? shadowImpressions[slot.id]?.[0] ??
-                                      slot.impressions[0]
                                     : impressionRanges[slot.id]?.[0] ??
-                                      slot.impressions[0]
+                                        slot.impressions[0]
                                 )}
                                 -
                                 {formatNumberWithSuffix(
                                   isDragging && activeSlotId === slot.id
                                     ? newValues[1]
-                                    : isShadowActive
-                                    ? shadowImpressions[slot.id]?.[1] ??
-                                      slot.impressions[1]
                                     : impressionRanges[slot.id]?.[1] ??
-                                      slot.impressions[1]
+                                        slot.impressions[1]
                                 )}
                               </span>
                             ) : (
                               <span className="text-slate-500">Not set</span>
                             )}
                           </div>
-                          <div className="relative">
-                            {isConfirmed ? (
-                              <div className="relative">
-                                {/* Base layer: The original slider that stays in place */}
-                                <div
-                                  className={
-                                    isDragging && activeSlotId === slot.id
-                                      ? "block"
-                                      : "hidden"
-                                  }
-                                >
+                          {isConfirmed ? (
+                            <div className="relative">
+                              {/* Base layer: The original slider that stays in place */}
+                              <div
+                                className={
+                                  isDragging && activeSlotId === slot.id
+                                    ? "block"
+                                    : "hidden"
+                                }
+                              >
+                                <Slider
+                                  value={originalValues}
+                                  min={0}
+                                  max={Math.max(
+                                    10,
+                                    (totalImpressions /
+                                      (games.flatMap((g) => g.adSlots).length ||
+                                        1)) *
+                                      1.5
+                                  )}
+                                  step={1}
+                                  disabled={true}
+                                  className="w-full"
+                                />
+                              </div>
+
+                              {/* Middle layer: The moving greyed out slider (shown only when dragging) */}
+                              {isDragging && activeSlotId === slot.id && (
+                                <div className="absolute inset-0 z-10">
                                   <Slider
-                                    value={originalValues}
+                                    value={newValues}
                                     min={0}
                                     max={Math.max(
                                       10,
@@ -581,78 +517,55 @@ export default function CampaignBuilder() {
                                     )}
                                     step={1}
                                     disabled={true}
-                                    className="w-full"
+                                    className="w-full opacity-70"
                                   />
                                 </div>
+                              )}
 
-                                {/* Middle layer: The moving greyed out slider (shown only when dragging) */}
-                                {isDragging && activeSlotId === slot.id && (
-                                  <div className="absolute inset-0 z-10">
-                                    <Slider
-                                      value={newValues}
-                                      min={0}
-                                      max={Math.max(
-                                        10,
-                                        (totalImpressions /
-                                          (games.flatMap((g) => g.adSlots)
-                                            .length || 1)) *
-                                          1.5
-                                      )}
-                                      step={1}
-                                      disabled={true}
-                                      className="w-full opacity-70"
-                                    />
-                                  </div>
-                                )}
-
-                                {/* Top layer: The interactive slider (invisible during drag but receives events) */}
-                                <div
+                              {/* Top layer: The interactive slider (invisible during drag but receives events) */}
+                              <div
+                                className={
+                                  isDragging && activeSlotId === slot.id
+                                    ? "absolute inset-0 z-20"
+                                    : ""
+                                }
+                              >
+                                <Slider
+                                  value={
+                                    isDragging && activeSlotId === slot.id
+                                      ? newValues
+                                      : impressionRanges[slot.id] ||
+                                        slot.impressions
+                                  }
+                                  min={0}
+                                  max={Math.max(
+                                    10,
+                                    (totalImpressions /
+                                      (games.flatMap((g) => g.adSlots).length ||
+                                        1)) *
+                                      1.5
+                                  )}
+                                  step={1}
+                                  onValueChange={(value) =>
+                                    handleSliderChange(
+                                      slot.id,
+                                      value as [number, number]
+                                    )
+                                  }
+                                  onValueCommit={() =>
+                                    handleSliderChangeEnd(slot.id)
+                                  }
                                   className={
                                     isDragging && activeSlotId === slot.id
-                                      ? "absolute inset-0 z-20"
+                                      ? "opacity-0"
                                       : ""
                                   }
-                                >
-                                  <Slider
-                                    value={
-                                      isDragging && activeSlotId === slot.id
-                                        ? newValues
-                                        : isShadowActive
-                                        ? shadowImpressions[slot.id] ||
-                                          slot.impressions
-                                        : impressionRanges[slot.id] ||
-                                          slot.impressions
-                                    }
-                                    min={0}
-                                    max={Math.max(
-                                      10,
-                                      (totalImpressions /
-                                        (games.flatMap((g) => g.adSlots)
-                                          .length || 1)) *
-                                        1.5
-                                    )}
-                                    step={1}
-                                    onValueChange={(value) =>
-                                      handleSliderChange(
-                                        slot.id,
-                                        value as [number, number]
-                                      )
-                                    }
-                                    onValueCommit={() =>
-                                      handleSliderChangeEnd(slot.id)
-                                    }
-                                    className={
-                                      isDragging && activeSlotId === slot.id
-                                        ? "opacity-0"
-                                        : ""
-                                    }
-                                  />
-                                </div>
+                                />
                               </div>
-                            ) : (
-                              <div className="h-2 bg-slate-800 rounded-full w-full opacity-50"></div>
-                            )}
-                          </div>
+                            </div>
+                          ) : (
+                            <div className="h-2 bg-slate-800 rounded-full w-full opacity-50"></div>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -664,7 +577,7 @@ export default function CampaignBuilder() {
         </div>
       </div>
 
-      {/* Dialog for impression changes (completely different component from Drawer/Sheet) */}
+      {/* Dialog for impression changes */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="bg-slate-900 border-slate-800 text-white max-w-md w-full mx-auto">
           <DialogHeader>
@@ -705,30 +618,6 @@ export default function CampaignBuilder() {
               </p>
             </div>
             <div className="flex gap-4">
-              {isConfirmed && isShadowActive ? (
-                <>
-                  <Button
-                    variant="outline"
-                    className="text-white border-slate-700 hover:bg-slate-800"
-                    onClick={cancelShadowChanges}
-                  >
-                    Cancel Changes
-                  </Button>
-                  <Button
-                    className="bg-primary-50 hover:bg-primary-50/70 text-white"
-                    onClick={applyShadowChanges}
-                  >
-                    Apply Changes
-                  </Button>
-                </>
-              ) : isConfirmed ? (
-                <Button
-                  className="bg-primary-50 hover:bg-primary-50/70 text-white"
-                  onClick={startShadowMovement}
-                >
-                  Adjust Impressions
-                </Button>
-              ) : null}
               <Link href="/campaign-scheduler">
                 <Button
                   className="bg-primary-50 hover:bg-primary-50/70 px-8 text-white"
