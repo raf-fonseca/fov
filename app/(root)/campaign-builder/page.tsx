@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Trash2, ImageIcon, ArrowRight } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { Input } from "@/components/ui/input";
 
 interface AdSlot {
   id: string;
@@ -98,6 +99,13 @@ export default function CampaignBuilder() {
 
   const [totalImpressions, setTotalImpressions] = useState<number>(0);
   const [minimumGuaranteed, setMinimumGuaranteed] = useState<number>(0);
+  const [shadowImpressions, setShadowImpressions] = useState<
+    Record<string, [number, number]>
+  >({});
+  const [isShadowActive, setIsShadowActive] = useState<boolean>(false);
+  const [inputError, setInputError] = useState<string>("");
+  const [isConfirmed, setIsConfirmed] = useState<boolean>(false);
+  const [tempTotalImpressions, setTempTotalImpressions] = useState<string>("");
 
   // Calculate minimum guaranteed impressions based on selected slots
   useEffect(() => {
@@ -114,10 +122,90 @@ export default function CampaignBuilder() {
   }, [games, impressionRanges]);
 
   const updateSlotImpressions = (slotId: string, value: [number, number]) => {
-    setImpressionRanges((prev) => ({
-      ...prev,
-      [slotId]: value,
-    }));
+    if (!isShadowActive) {
+      setImpressionRanges((prev) => ({
+        ...prev,
+        [slotId]: value,
+      }));
+    } else {
+      setShadowImpressions((prev) => ({
+        ...prev,
+        [slotId]: value,
+      }));
+    }
+  };
+
+  const handleTotalImpressionsChange = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const value = e.target.value;
+    setTempTotalImpressions(value);
+
+    // Validation happens during input as well
+    if (value === "") {
+      setInputError("");
+      return;
+    }
+
+    const numValue = parseFloat(value);
+
+    if (isNaN(numValue)) {
+      setInputError("Please enter a valid number");
+    } else if (numValue < 1000000) {
+      // This validates any number from 0 to 0.999999
+      setInputError(
+        "Ad slots combined generate a minimum of 1 million impressions per day"
+      );
+    } else {
+      setInputError("");
+    }
+  };
+
+  const confirmTotalImpressions = () => {
+    if (tempTotalImpressions === "") {
+      setInputError("Please enter a value");
+      return;
+    }
+
+    const numValue = parseFloat(tempTotalImpressions);
+
+    if (isNaN(numValue)) {
+      setInputError("Please enter a valid number");
+      return;
+    }
+
+    if (numValue < 1.0) {
+      // This validates any number from 0 to 0.999999
+      setInputError(
+        "Ad slots combined generate a minimum of 1 million impressions per day"
+      );
+      return;
+    }
+
+    setTotalImpressions(numValue);
+    setInputError("");
+    setIsConfirmed(true);
+  };
+
+  const resetConfirmation = () => {
+    setIsConfirmed(false);
+    setTempTotalImpressions(totalImpressions.toString());
+  };
+
+  const applyShadowChanges = () => {
+    setImpressionRanges(shadowImpressions);
+    setShadowImpressions({});
+    setIsShadowActive(false);
+  };
+
+  const cancelShadowChanges = () => {
+    setShadowImpressions({});
+    setIsShadowActive(false);
+  };
+
+  const startShadowMovement = () => {
+    setShadowImpressions({ ...impressionRanges });
+    setIsShadowActive(true);
   };
 
   const removeAdSlot = (gameId: string, slotId: string) => {
@@ -146,54 +234,61 @@ export default function CampaignBuilder() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-400">
-                  Target Total Impressions (Millions)
+                  Target Total Impressions
                 </label>
                 <div className="flex items-center gap-4">
-                  <Slider
-                    value={[totalImpressions]}
-                    onValueChange={(value) => setTotalImpressions(value[0])}
-                    min={0}
-                    max={50}
-                    step={0.1}
-                    className="flex-1"
-                  />
-                  <span className="text-lg font-medium text-white min-w-[60px] text-right">
-                    {totalImpressions.toFixed(1)}M
-                  </span>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-400">
-                  Minimum Guaranteed Impressions
-                </label>
-                <div className="flex items-center gap-4">
-                  <div className="flex-1 h-2 bg-slate-800 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-sky-500 transition-all duration-500 ease-out"
-                      style={{
-                        width: `${
-                          (minimumGuaranteed / totalImpressions) * 100
-                        }%`,
-                      }}
-                    />
+                  <div className="flex-1">
+                    <div className="flex gap-2">
+                      <Input
+                        step="0.1"
+                        value={
+                          isConfirmed
+                            ? totalImpressions || ""
+                            : tempTotalImpressions
+                        }
+                        onChange={handleTotalImpressionsChange}
+                        className="bg-slate-800 text-white border-slate-700 focus:ring-sky-500"
+                        disabled={isConfirmed}
+                      />
+                      {!isConfirmed ? (
+                        <Button
+                          onClick={confirmTotalImpressions}
+                          className="bg-sky-600 hover:bg-sky-700 text-white"
+                        >
+                          Confirm
+                        </Button>
+                      ) : (
+                        <Button
+                          onClick={resetConfirmation}
+                          variant="outline"
+                          className="border-slate-700 text-slate-300 hover:bg-slate-800"
+                        >
+                          Edit
+                        </Button>
+                      )}
+                    </div>
+                    {inputError && (
+                      <p className="text-sm text-red-400 mt-1">{inputError}</p>
+                    )}
                   </div>
-                  <span className="text-lg font-medium text-white min-w-[60px] text-right">
-                    {minimumGuaranteed.toFixed(1)}M
-                  </span>
                 </div>
               </div>
             </div>
             <p className="text-sm text-slate-400 mt-2">
-              Set your desired campaign threshold. The minimum guaranteed
-              impressions shown below represent the baseline you'll receive
-              based on your selected ad slots and their ranges.
+              Set your desired campaign impressions. This will be distrubuted
+              across all ad slots.
             </p>
           </CardContent>
         </Card>
 
         <div className="grid grid-cols-1 gap-6">
           {games.map((game) => (
-            <Card key={game.id} className="bg-slate-950 border-slate-800">
+            <Card
+              key={game.id}
+              className={`bg-slate-950 border-slate-800 ${
+                !isConfirmed ? "opacity-50 pointer-events-none" : ""
+              }`}
+            >
               <CardHeader>
                 <CardTitle className="text-xl text-white">
                   {game.name}
@@ -236,22 +331,34 @@ export default function CampaignBuilder() {
                           <div className="flex justify-between text-sm text-slate-400">
                             <span>Impression Range (Millions)</span>
                             <span className="text-white">
-                              {(
-                                impressionRanges[slot.id]?.[0] ??
-                                slot.impressions[0]
+                              {(isShadowActive
+                                ? shadowImpressions[slot.id]?.[0] ??
+                                  slot.impressions[0]
+                                : impressionRanges[slot.id]?.[0] ??
+                                  slot.impressions[0]
                               ).toFixed(1)}
                               M -
-                              {(
-                                impressionRanges[slot.id]?.[1] ??
-                                slot.impressions[1]
+                              {(isShadowActive
+                                ? shadowImpressions[slot.id]?.[1] ??
+                                  slot.impressions[1]
+                                : impressionRanges[slot.id]?.[1] ??
+                                  slot.impressions[1]
                               ).toFixed(1)}
                               M
                             </span>
                           </div>
                           <Slider
                             defaultValue={[
-                              slot.impressions[0],
-                              slot.impressions[1],
+                              isShadowActive
+                                ? shadowImpressions[slot.id]?.[0] ??
+                                  slot.impressions[0]
+                                : impressionRanges[slot.id]?.[0] ??
+                                  slot.impressions[0],
+                              isShadowActive
+                                ? shadowImpressions[slot.id]?.[1] ??
+                                  slot.impressions[1]
+                                : impressionRanges[slot.id]?.[1] ??
+                                  slot.impressions[1],
                             ]}
                             min={0}
                             max={10}
@@ -286,12 +393,41 @@ export default function CampaignBuilder() {
                 slots
               </p>
             </div>
-            <Link href="/campaign-scheduler">
-              <Button className="bg-primary-50 hover:bg-primary-50/70 px-8 text-white">
-                Continue to Scheduler
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </Link>
+            <div className="flex gap-4">
+              {isConfirmed && isShadowActive ? (
+                <>
+                  <Button
+                    variant="outline"
+                    className="text-white border-slate-700 hover:bg-slate-800"
+                    onClick={cancelShadowChanges}
+                  >
+                    Cancel Changes
+                  </Button>
+                  <Button
+                    className="bg-primary-50 hover:bg-primary-50/70 text-white"
+                    onClick={applyShadowChanges}
+                  >
+                    Apply Changes
+                  </Button>
+                </>
+              ) : isConfirmed ? (
+                <Button
+                  className="bg-primary-50 hover:bg-primary-50/70 text-white"
+                  onClick={startShadowMovement}
+                >
+                  Adjust Impressions
+                </Button>
+              ) : null}
+              <Link href="/campaign-scheduler">
+                <Button
+                  className="bg-primary-50 hover:bg-primary-50/70 px-8 text-white"
+                  disabled={!isConfirmed}
+                >
+                  Continue to Scheduler
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </Link>
+            </div>
           </div>
         </div>
       </div>
