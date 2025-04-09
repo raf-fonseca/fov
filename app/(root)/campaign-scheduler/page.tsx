@@ -12,11 +12,19 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { GoogleCalendar } from "@/components/google-calendar";
+// import { GoogleCalendar } from "@/components/google-calendar";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
 import { GameInfo } from "@/app/types";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { format } from "date-fns";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Badge } from "@/components/ui/badge";
 
 export type Region = "US" | "EU" | "BR" | "ASIA" | "INTL";
 export type DeliverySpeed = "drip" | "balanced" | "burst";
@@ -172,6 +180,49 @@ export default function CampaignScheduler() {
     },
   ]);
 
+  // New state for the date selection
+  const [date, setDate] = useState<Date | undefined>(new Date());
+
+  // Handle date selection
+  const handleDateSelect = (selectedDate: Date | undefined) => {
+    if (!selectedDate) return;
+
+    setDate(selectedDate);
+
+    // Add the date to campaign if it doesn't exist
+    if (
+      !campaign.selectedDates.some(
+        (d) =>
+          d.getDate() === selectedDate.getDate() &&
+          d.getMonth() === selectedDate.getMonth() &&
+          d.getFullYear() === selectedDate.getFullYear()
+      )
+    ) {
+      setCampaign((prev) => ({
+        ...prev,
+        selectedDates: [...prev.selectedDates, selectedDate],
+        days: prev.selectedDates.length + 1,
+      }));
+    } else {
+      // Remove the date if it already exists
+      setCampaign((prev) => {
+        const filteredDates = prev.selectedDates.filter(
+          (d) =>
+            !(
+              d.getDate() === selectedDate.getDate() &&
+              d.getMonth() === selectedDate.getMonth() &&
+              d.getFullYear() === selectedDate.getFullYear()
+            )
+        );
+        return {
+          ...prev,
+          selectedDates: filteredDates,
+          days: filteredDates.length,
+        };
+      });
+    }
+  };
+
   // Calculate days based on impressions and game
   useEffect(() => {
     const selectedGame = GAMES.find((g) => g.id === campaign.gameId);
@@ -286,7 +337,7 @@ export default function CampaignScheduler() {
 
   return (
     <div className="flex flex-col gap-6 mt-24 px-10 lg:px-20 pb-24">
-      <Card className="bg-[#151825] border-[#2a2d3a] ">
+      <Card className="bg-[#151825] border-[#2a2d3a]">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Calendar className="h-5 w-5" />
@@ -294,19 +345,15 @@ export default function CampaignScheduler() {
           </CardTitle>
           <CardDescription>Configure your ad campaign settings</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Game Selector */}
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Campaign Settings Column */}
+            <div className="space-y-6">
+              <h3 className="text-lg font-medium">Campaign Settings</h3>
 
-          {/* Campaign Settings Card */}
-          <Card className="bg-[#151825] border-[#2a2d3a]">
-            <CardHeader>
-              <CardTitle className="text-lg">Campaign Settings</CardTitle>
-              <CardDescription>Adjust your campaign parameters</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
               {/* Regions */}
               <div className="space-y-3">
-                <label className="text-sm font-medium ">Target Regions</label>
+                <label className="text-sm font-medium">Target Regions</label>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-2">
                   {["US", "EU", "BR", "ASIA", "INTL"].map((region) => (
                     <div key={region} className="flex items-center space-x-2">
@@ -362,7 +409,7 @@ export default function CampaignScheduler() {
               </div>
 
               {/* Impressions and Budget */}
-              <div className="grid gap-4 md:grid-cols-2">
+              <div className="grid gap-4">
                 <div className="space-y-2">
                   <label className="text-sm font-medium">
                     Target Impressions
@@ -439,35 +486,40 @@ export default function CampaignScheduler() {
                   </div>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
 
-          {/* Calendar */}
-          <Card className="bg-[#151825] border-[#2a2d3a]">
-            <CardHeader className="flex flex-row items-center justify-between">
-              <div>
-                <CardTitle className="text-lg">Campaign Schedule</CardTitle>
-                <CardDescription>
-                  Below is the most optimized schedule for your campaign.
-                  Adjusting the schedule will affect pricing.
-                </CardDescription>
+            {/* Campaign Schedule Column */}
+            <div className="space-y-6">
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-medium">Campaign Schedule</h3>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="hover:cursor-pointer"
+                  onClick={() =>
+                    setCampaign((prev) => ({ ...prev, selectedDates: [] }))
+                  }
+                >
+                  Reset
+                </Button>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                className="hover:cursor-pointer"
-              >
-                Reset
-              </Button>
-            </CardHeader>
-            <CardContent>
-              <GoogleCalendar
-                campaign={campaign}
-                campaigns={otherCampaigns}
-                onSelectTimePeriods={handleTimePeriodSelect}
-              />
-            </CardContent>
-          </Card>
+
+              <div className="bg-[#0a0c14] rounded-lg p-4 w-full">
+                <CalendarComponent
+                  mode="multiple"
+                  selected={campaign.selectedDates}
+                  onSelect={(dates) => {
+                    if (!Array.isArray(dates)) return;
+                    setCampaign((prev) => ({
+                      ...prev,
+                      selectedDates: dates,
+                      days: dates.length,
+                    }));
+                  }}
+                />
+              </div>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
