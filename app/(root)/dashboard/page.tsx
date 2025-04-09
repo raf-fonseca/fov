@@ -30,7 +30,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { ShimmerButton } from "react-shimmer-effects";
+import { Skeleton } from "@/components/ui/skeleton";
 
 // Define types for campaign and tooltip data
 interface Campaign {
@@ -86,7 +86,7 @@ const campaigns: Campaign[] = [
     totalDwellTime: 12.5,
     screenPercentage: 42,
     viewability: 90,
-    progress: 49.8,
+    progress: 1.02,
     status: "processing" as const,
     platformBreakdown: {
       pc: 45,
@@ -357,6 +357,17 @@ export default function Dashboard() {
               </p>
             </div>
           )}
+          {currentCampaign.status === "processing" && (
+            <div className="mb-4 p-3 rounded-lg bg-blue-900/50 border border-blue-700 text-blue-100 flex items-center justify-between">
+              <p className="text-sm">
+                Note: The metrics for this campaign are still being processed.
+                We will provide 99.7% accurate predictions soon.
+              </p>
+              <span className="ml-4 px-3 py-1 rounded-md bg-blue-950 text-sky-400 text-xs font-medium whitespace-nowrap border border-blue-700">
+                12h 34m remaining
+              </span>
+            </div>
+          )}
 
           {/* Featured Campaign Section - Takes up upper half of screen */}
           <div className="relative mb-6">
@@ -443,56 +454,88 @@ export default function Dashboard() {
                         </p>
                       </div>
                       <div className="text-right">
-                        <p className="text-sm font-medium text-white">
-                          {formatNumber(currentCampaign.totalImpressions)}
-                        </p>
-                        <p className="text-xs text-slate-400">Impressions</p>
+                        {isProcessing(currentCampaign.status) ? (
+                          <>
+                            <div className="flex flex-col gap-1">
+                              <div className="flex items-center gap-2">
+                                <div className="h-2 w-2 rounded-full bg-sky-500 animate-pulse"></div>
+                                <span className="text-xs text-sky-400">
+                                  Processing
+                                </span>
+                              </div>
+                              <Skeleton className="w-[120px] h-[10px] " />
+                            </div>
+                          </>
+                        ) : (
+                          <div className="flex flex-col ">
+                            <p className="text-sm font-medium text-white">
+                              {formatNumber(currentCampaign.totalImpressions)}
+                            </p>
+                            <span className="text-xs text-slate-400">
+                              Impressions
+                            </span>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </CardHeader>
                   <CardContent className="p-3 pt-0 h-[180px]">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <LineChart
-                        data={dailyImpressions}
-                        margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
-                      >
-                        <XAxis
-                          dataKey="day"
-                          tick={{ fontSize: 10, fill: "#94a3b8" }}
-                          tickLine={{ stroke: "#475569" }}
-                          axisLine={{ stroke: "#475569" }}
-                        />
-                        <YAxis
-                          tick={{ fontSize: 10, fill: "#94a3b8" }}
-                          tickLine={{ stroke: "#475569" }}
-                          axisLine={{ stroke: "#475569" }}
-                          tickFormatter={(value) => `${value}M`}
-                          width={35}
-                        />
-                        <Tooltip
-                          contentStyle={{
-                            backgroundColor: "#1e293b",
-                            border: "none",
-                            borderRadius: "0.375rem",
-                            color: "#f8fafc",
-                            fontSize: "12px",
-                          }}
-                          formatter={(value: number) => [
-                            `${value}M`,
-                            "Impressions",
-                          ]}
-                          labelFormatter={(label) => `Day ${label}`}
-                        />
-                        <Line
-                          type="monotone"
-                          dataKey="impressions"
-                          stroke="hsl(199 95% 50%)"
-                          strokeWidth={2}
-                          dot={false}
-                          activeDot={{ r: 4, fill: "hsl(199 95% 50%)" }}
-                        />
-                      </LineChart>
-                    </ResponsiveContainer>
+                    {isProcessing(currentCampaign.status) ? (
+                      // Display processing state for the chart area
+                      <div className="flex flex-col h-full items-center justify-center">
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="h-2 w-2 rounded-full bg-sky-500 animate-pulse"></div>
+                          <span className="text-xs text-sky-400 font-bold">
+                            Processing
+                          </span>
+                        </div>
+                        <Skeleton className="w-full h-[150px]" />
+                      </div>
+                    ) : (
+                      // Display the actual chart when not processing
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart
+                          data={dailyImpressions}
+                          margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
+                        >
+                          <XAxis
+                            dataKey="day"
+                            tick={{ fontSize: 10, fill: "#94a3b8" }}
+                            tickLine={{ stroke: "#475569" }}
+                            axisLine={{ stroke: "#475569" }}
+                          />
+                          <YAxis
+                            tick={{ fontSize: 10, fill: "#94a3b8" }}
+                            tickLine={{ stroke: "#475569" }}
+                            axisLine={{ stroke: "#475569" }}
+                            tickFormatter={(value) => `${value}M`}
+                            width={35}
+                          />
+                          <Tooltip
+                            contentStyle={{
+                              backgroundColor: "#1e293b",
+                              border: "none",
+                              borderRadius: "0.375rem",
+                              color: "#f8fafc",
+                              fontSize: "12px",
+                            }}
+                            formatter={(value: number) => [
+                              `${value}M`,
+                              "Impressions",
+                            ]}
+                            labelFormatter={(label) => `Day ${label}`}
+                          />
+                          <Line
+                            type="monotone"
+                            dataKey="impressions"
+                            stroke="hsl(199 95% 50%)"
+                            strokeWidth={2}
+                            dot={false}
+                            activeDot={{ r: 4, fill: "hsl(199 95% 50%)" }}
+                          />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    )}
                   </CardContent>
                 </Card>
                 {currentCampaign.status === "upcoming" && (
@@ -594,7 +637,19 @@ export default function Dashboard() {
                           Total Impressions
                         </CardTitle>
                         <CardDescription className="text-xl font-bold text-white ">
-                          {formatNumber(currentCampaign.totalImpressions)}
+                          {isProcessing(currentCampaign.status) ? (
+                            <div className="flex flex-col items-start gap-2">
+                              <div className="flex items-center gap-2">
+                                <div className="h-2 w-2 rounded-full bg-sky-500 animate-pulse"></div>
+                                <span className="text-xs text-sky-400">
+                                  Processing
+                                </span>
+                              </div>
+                              <Skeleton className="w-[100px] h-[30px] " />
+                            </div>
+                          ) : (
+                            formatNumber(currentCampaign.totalImpressions)
+                          )}
                         </CardDescription>
                       </CardHeader>
                     </Card>
@@ -607,7 +662,15 @@ export default function Dashboard() {
                         </CardTitle>
                         <CardDescription className="text-xl font-bold text-white">
                           {isProcessing(currentCampaign.status) ? (
-                            <ShimmerButton size="md" />
+                            <div className="flex flex-col items-start gap-2">
+                              <div className="flex items-center gap-2">
+                                <div className="h-2 w-2 rounded-full bg-sky-500 animate-pulse"></div>
+                                <span className="text-xs text-sky-400">
+                                  Processing
+                                </span>
+                              </div>
+                              <Skeleton className="w-[100px] h-[30px] " />
+                            </div>
                           ) : (
                             currentCampaign.impressionsPerPlay.toFixed(1)
                           )}
@@ -622,7 +685,19 @@ export default function Dashboard() {
                           Engagement Lift
                         </CardTitle>
                         <CardDescription className="text-xl font-bold text-green-500">
-                          +{currentCampaign.engagementLift.toFixed(1)}%
+                          {isProcessing(currentCampaign.status) ? (
+                            <div className="flex flex-col items-start gap-2">
+                              <div className="flex items-center gap-2">
+                                <div className="h-2 w-2 rounded-full bg-sky-500 animate-pulse"></div>
+                                <span className="text-xs text-sky-400">
+                                  Processing
+                                </span>
+                              </div>
+                              <Skeleton className="w-[100px] h-[30px] " />
+                            </div>
+                          ) : (
+                            `+${currentCampaign.engagementLift.toFixed(1)}%`
+                          )}
                         </CardDescription>
                       </CardHeader>
                     </Card>
@@ -634,7 +709,19 @@ export default function Dashboard() {
                           Total Dwell Time
                         </CardTitle>
                         <CardDescription className="text-xl font-bold text-white">
-                          {currentCampaign.totalDwellTime.toFixed(1)}s
+                          {isProcessing(currentCampaign.status) ? (
+                            <div className="flex flex-col items-start gap-2">
+                              <div className="flex items-center gap-2">
+                                <div className="h-2 w-2 rounded-full bg-sky-500 animate-pulse"></div>
+                                <span className="text-xs text-sky-400">
+                                  Processing
+                                </span>
+                              </div>
+                              <Skeleton className="w-[100px] h-[30px] " />
+                            </div>
+                          ) : (
+                            `${currentCampaign.totalDwellTime.toFixed(1)}s`
+                          )}
                         </CardDescription>
                       </CardHeader>
                     </Card>
@@ -729,42 +816,70 @@ export default function Dashboard() {
                       <CardTitle className="text-lg">
                         Screen & Viewability
                       </CardTitle>
-                      <CardDescription className="space-y-3">
-                        <div>
+                      <CardDescription className="space-y-3 pt-2">
+                        <div className="flex flex-col">
                           <div className="flex justify-between mb-1">
                             <span className="text-xs text-slate-400">
                               % Screen Coverage
                             </span>
-                            <span className="text-xs">
-                              {currentCampaign.screenPercentage}%
-                            </span>
+                            {isProcessing(currentCampaign.status) ? (
+                              <div className="flex items-center gap-2">
+                                <div className="h-2 w-2 rounded-full bg-sky-500 animate-pulse"></div>
+                                <span className="text-xs text-sky-400 font-bold">
+                                  Processing
+                                </span>
+                              </div>
+                            ) : (
+                              <>
+                                <span className="text-xs">
+                                  {currentCampaign.screenPercentage}%
+                                </span>
+                              </>
+                            )}
                           </div>
-                          <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
-                            <div
-                              className="h-full bg-sky-500 rounded-full"
-                              style={{
-                                width: `${currentCampaign.screenPercentage}%`,
-                              }}
-                            ></div>
-                          </div>
+                          {isProcessing(currentCampaign.status) ? (
+                            <Skeleton className="w-full h-2" />
+                          ) : (
+                            <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                              <div
+                                className="h-full bg-sky-500 rounded-full"
+                                style={{
+                                  width: `${currentCampaign.screenPercentage}%`,
+                                }}
+                              ></div>
+                            </div>
+                          )}
                         </div>
                         <div>
                           <div className="flex justify-between mb-1">
                             <span className="text-xs text-slate-400">
                               Viewability
                             </span>
-                            <span className="text-xs">
-                              {currentCampaign.viewability}%
-                            </span>
+                            {isProcessing(currentCampaign.status) ? (
+                              <div className="flex items-center gap-2">
+                                <div className="h-2 w-2 rounded-full bg-sky-500 animate-pulse"></div>
+                                <span className="text-xs text-sky-400 font-bold">
+                                  Processing
+                                </span>
+                              </div>
+                            ) : (
+                              <span className="text-xs">
+                                {currentCampaign.viewability}%
+                              </span>
+                            )}
                           </div>
-                          <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
-                            <div
-                              className="h-full bg-sky-500 rounded-full"
-                              style={{
-                                width: `${currentCampaign.viewability}%`,
-                              }}
-                            ></div>
-                          </div>
+                          {isProcessing(currentCampaign.status) ? (
+                            <Skeleton className="w-full h-2" />
+                          ) : (
+                            <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                              <div
+                                className="h-full bg-sky-500 rounded-full"
+                                style={{
+                                  width: `${currentCampaign.viewability}%`,
+                                }}
+                              ></div>
+                            </div>
+                          )}
                         </div>
                       </CardDescription>
                     </CardHeader>
@@ -780,36 +895,64 @@ export default function Dashboard() {
                         <div>
                           <div className="flex justify-between mb-1">
                             <span className="text-xs text-slate-400">PC</span>
-                            <span className="text-xs">
-                              {currentCampaign.platformBreakdown.pc}%
-                            </span>
+                            {isProcessing(currentCampaign.status) ? (
+                              <div className="flex items-center gap-2">
+                                <div className="h-2 w-2 rounded-full bg-sky-500 animate-pulse"></div>
+                                <span className="text-xs text-sky-400 font-bold">
+                                  Processing
+                                </span>
+                              </div>
+                            ) : (
+                              <>
+                                <span className="text-xs">
+                                  {currentCampaign.platformBreakdown.pc}%
+                                </span>
+                              </>
+                            )}
                           </div>
-                          <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                            <div
-                              className="h-full bg-sky-500 rounded-full"
-                              style={{
-                                width: `${currentCampaign.platformBreakdown.pc}%`,
-                              }}
-                            ></div>
-                          </div>
+                          {isProcessing(currentCampaign.status) ? (
+                            <Skeleton className="w-full h-2" />
+                          ) : (
+                            <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                              <div
+                                className="h-full bg-sky-500 rounded-full"
+                                style={{
+                                  width: `${currentCampaign.platformBreakdown.pc}%`,
+                                }}
+                              ></div>
+                            </div>
+                          )}
                         </div>
                         <div>
                           <div className="flex justify-between mb-1">
                             <span className="text-xs text-slate-400">
                               Console
                             </span>
-                            <span className="text-xs">
-                              {currentCampaign.platformBreakdown.console}%
-                            </span>
+                            {isProcessing(currentCampaign.status) ? (
+                              <div className="flex items-center gap-2">
+                                <div className="h-2 w-2 rounded-full bg-sky-500 animate-pulse"></div>
+                                <span className="text-xs text-sky-400 font-bold">
+                                  Processing
+                                </span>
+                              </div>
+                            ) : (
+                              <span className="text-xs">
+                                {currentCampaign.platformBreakdown.console}%
+                              </span>
+                            )}
                           </div>
-                          <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                            <div
-                              className="h-full bg-purple-500 rounded-full"
-                              style={{
-                                width: `${currentCampaign.platformBreakdown.console}%`,
-                              }}
-                            ></div>
-                          </div>
+                          {isProcessing(currentCampaign.status) ? (
+                            <Skeleton className="w-full h-2" />
+                          ) : (
+                            <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                              <div
+                                className="h-full bg-sky-500 rounded-full"
+                                style={{
+                                  width: `${currentCampaign.platformBreakdown.console}%`,
+                                }}
+                              ></div>
+                            </div>
+                          )}
                         </div>
                       </CardDescription>
                     </CardHeader>
@@ -823,116 +966,70 @@ export default function Dashboard() {
                       Region Distribution
                     </CardTitle>
                     <CardDescription className="space-y-2">
-                      <div>
-                        <div className="flex justify-between mb-1">
-                          <span className="text-xs text-slate-400">
-                            North America
-                          </span>
-                          <span className="text-xs">
-                            {currentCampaign.regionDistribution.northAmerica}%
-                          </span>
-                        </div>
-                        <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-blue-500 rounded-full"
-                            style={{
-                              width: `${currentCampaign.regionDistribution.northAmerica}%`,
-                            }}
-                          ></div>
-                        </div>
-                      </div>
-                      <div>
-                        <div className="flex justify-between mb-1">
-                          <span className="text-xs text-slate-400">Europe</span>
-                          <span className="text-xs">
-                            {currentCampaign.regionDistribution.europe}%
-                          </span>
-                        </div>
-                        <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-yellow-500 rounded-full"
-                            style={{
-                              width: `${currentCampaign.regionDistribution.europe}%`,
-                            }}
-                          ></div>
-                        </div>
-                      </div>
-                      <div>
-                        <div className="flex justify-between mb-1">
-                          <span className="text-xs text-slate-400">
-                            Asia Pacific
-                          </span>
-                          <span className="text-xs">
-                            {currentCampaign.regionDistribution.asiaPacific}%
-                          </span>
-                        </div>
-                        <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-red-500 rounded-full"
-                            style={{
-                              width: `${currentCampaign.regionDistribution.asiaPacific}%`,
-                            }}
-                          ></div>
-                        </div>
-                      </div>
-                      <div>
-                        <div className="flex justify-between mb-1">
-                          <span className="text-xs text-slate-400">
-                            Latin America
-                          </span>
-                          <span className="text-xs">
-                            {currentCampaign.regionDistribution.latinAmerica}%
-                          </span>
-                        </div>
-                        <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-green-500 rounded-full"
-                            style={{
-                              width: `${currentCampaign.regionDistribution.latinAmerica}%`,
-                            }}
-                          ></div>
-                        </div>
-                      </div>
-                      <div>
-                        <div className="flex justify-between mb-1">
-                          <span className="text-xs text-slate-400">
-                            Middle East & Africa
-                          </span>
-                          <span className="text-xs">
-                            {
-                              currentCampaign.regionDistribution
-                                .middleEastAfrica
-                            }
-                            %
-                          </span>
-                        </div>
-                        <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-purple-500 rounded-full"
-                            style={{
-                              width: `${currentCampaign.regionDistribution.middleEastAfrica}%`,
-                            }}
-                          ></div>
-                        </div>
-                      </div>
-                      <div>
-                        <div className="flex justify-between mb-1">
-                          <span className="text-xs text-slate-400">
-                            Oceania
-                          </span>
-                          <span className="text-xs">
-                            {currentCampaign.regionDistribution.oceania}%
-                          </span>
-                        </div>
-                        <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-pink-500 rounded-full"
-                            style={{
-                              width: `${currentCampaign.regionDistribution.oceania}%`,
-                            }}
-                          ></div>
-                        </div>
-                      </div>
+                      {Object.entries(currentCampaign.regionDistribution).map(
+                        ([region, percentage]) => {
+                          type RegionConfig = {
+                            name: string;
+                            color: string;
+                          };
+
+                          const regionConfigs: Record<string, RegionConfig> = {
+                            northAmerica: {
+                              name: "North America",
+                              color: "bg-blue-500",
+                            },
+                            europe: { name: "Europe", color: "bg-yellow-500" },
+                            asiaPacific: {
+                              name: "Asia Pacific",
+                              color: "bg-red-500",
+                            },
+                            latinAmerica: {
+                              name: "Latin America",
+                              color: "bg-green-500",
+                            },
+                            middleEastAfrica: {
+                              name: "Middle East & Africa",
+                              color: "bg-purple-500",
+                            },
+                            oceania: { name: "Oceania", color: "bg-pink-500" },
+                          };
+
+                          const regionConfig = regionConfigs[region];
+                          if (!regionConfig) return null;
+
+                          return (
+                            <div key={region}>
+                              <div className="flex justify-between mb-1">
+                                <span className="text-xs text-slate-400">
+                                  {regionConfig.name}
+                                </span>
+                                {isProcessing(currentCampaign.status) ? (
+                                  <div className="flex items-center gap-2">
+                                    <div className="h-2 w-2 rounded-full bg-sky-500 animate-pulse"></div>
+                                    <span className="text-xs text-sky-400 font-bold">
+                                      Processing
+                                    </span>
+                                  </div>
+                                ) : (
+                                  <span className="text-xs">{percentage}%</span>
+                                )}
+                              </div>
+                              {isProcessing(currentCampaign.status) ? (
+                                <Skeleton className="w-full h-2" />
+                              ) : (
+                                <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                                  <div
+                                    className={`h-full ${regionConfig.color} rounded-full`}
+                                    style={{
+                                      width: `${percentage}%`,
+                                    }}
+                                  ></div>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        }
+                      )}
                     </CardDescription>
                   </CardHeader>
                 </Card>
