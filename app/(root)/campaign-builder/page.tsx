@@ -8,6 +8,14 @@ import { Trash2, ImageIcon, ArrowRight } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 
 interface AdSlot {
   id: string;
@@ -107,6 +115,15 @@ export default function CampaignBuilder() {
   const [isConfirmed, setIsConfirmed] = useState<boolean>(false);
   const [tempTotalImpressions, setTempTotalImpressions] = useState<string>("");
 
+  // Dialog-specific state (using Dialog instead of Sheet/Drawer)
+  const [dialogOpen, setDialogOpen] = useState<boolean>(false);
+  const [activeSlotId, setActiveSlotId] = useState<string | null>(null);
+  const [originalValues, setOriginalValues] = useState<[number, number]>([
+    0, 0,
+  ]);
+  const [newValues, setNewValues] = useState<[number, number]>([0, 0]);
+  const [isDragging, setIsDragging] = useState<boolean>(false);
+
   // Calculate minimum guaranteed impressions based on selected slots
   useEffect(() => {
     const totalMin = games.reduce((sum, game) => {
@@ -120,6 +137,48 @@ export default function CampaignBuilder() {
     }, 0);
     setMinimumGuaranteed(totalMin);
   }, [games, impressionRanges]);
+
+  // Distribute impressions when confirmed
+  const distributeImpressions = (total: number) => {
+    // Calculate the total minimum and maximum across all slots
+    const allSlots = games.flatMap((game) => game.adSlots);
+    const minTotal = allSlots.reduce(
+      (sum, slot) => sum + slot.impressions[0],
+      0
+    );
+    const maxPotential = allSlots.reduce(
+      (sum, slot) => sum + slot.impressions[1],
+      0
+    );
+
+    // Calculate how much we need to distribute above the minimums
+    const extraToDistribute = Math.max(0, total - minTotal);
+    const maxExtraAvailable = maxPotential - minTotal;
+
+    // Calculate the distribution ratio (between 0 and 1)
+    const distributionRatio =
+      maxExtraAvailable > 0
+        ? Math.min(extraToDistribute / maxExtraAvailable, 1)
+        : 0;
+
+    // Create new impression ranges
+    const newRanges: Record<string, [number, number]> = {};
+
+    allSlots.forEach((slot) => {
+      const min = slot.impressions[0];
+      const max = slot.impressions[1];
+      const range = max - min;
+
+      // Calculate the new upper bound based on distribution ratio
+      const newMax = min + range * distributionRatio;
+
+      // Store the new range
+      newRanges[slot.id] = [min, newMax];
+    });
+
+    // Update the impression ranges
+    setImpressionRanges(newRanges);
+  };
 
   const updateSlotImpressions = (slotId: string, value: [number, number]) => {
     if (!isShadowActive) {
@@ -151,7 +210,7 @@ export default function CampaignBuilder() {
 
     if (isNaN(numValue)) {
       setInputError("Please enter a valid number");
-    } else if (numValue < 1000000) {
+    } else if (numValue < 1.0) {
       // This validates any number from 0 to 0.999999
       setInputError(
         "Ad slots combined generate a minimum of 1 million impressions per day"
@@ -185,6 +244,9 @@ export default function CampaignBuilder() {
     setTotalImpressions(numValue);
     setInputError("");
     setIsConfirmed(true);
+
+    // Distribute impressions across all ad slots
+    distributeImpressions(numValue);
   };
 
   const resetConfirmation = () => {
@@ -220,6 +282,72 @@ export default function CampaignBuilder() {
         return game;
       })
     );
+  };
+
+  // Slider interaction handlers
+  const handleSliderChange = (slotId: string, value: [number, number]) => {
+    if (!isDragging) {
+      setIsDragging(true);
+      setActiveSlotId(slotId);
+      const originalValue = isShadowActive
+        ? shadowImpressions[slotId] ||
+          impressionRanges[slotId] ||
+          games.flatMap((g) => g.adSlots).find((s) => s.id === slotId)
+            ?.impressions || [0, 0]
+        : impressionRanges[slotId] ||
+          games.flatMap((g) => g.adSlots).find((s) => s.id === slotId)
+            ?.impressions || [0, 0];
+      setOriginalValues(originalValue);
+    }
+
+    setNewValues(value);
+  };
+
+  const handleSliderChangeEnd = (slotId: string) => {
+    if (isDragging) {
+      setIsDragging(false);
+      setDialogOpen(true);
+    }
+  };
+
+  // Dialog action handlers
+  const applyRedistribute = () => {
+    if (activeSlotId) {
+      if (isShadowActive) {
+        setShadowImpressions((prev) => ({
+          ...prev,
+          [activeSlotId]: newValues,
+        }));
+      } else {
+        setImpressionRanges((prev) => ({
+          ...prev,
+          [activeSlotId]: newValues,
+        }));
+      }
+    }
+    handleDialogClose();
+  };
+
+  const applyIncreaseTotal = () => {
+    const originalSum = originalValues[0] + originalValues[1];
+    const newSum = newValues[0] + newValues[1];
+    const diff = newSum - originalSum;
+
+    // Update the total impressions with the new value
+    const newTotal = totalImpressions + diff;
+    setTotalImpressions(newTotal);
+
+    // Reset confirmation state to allow editing the input field
+    setIsConfirmed(false);
+    setTempTotalImpressions(newTotal.toString());
+
+    // Close the dialog
+    handleDialogClose();
+  };
+
+  const handleDialogClose = () => {
+    setDialogOpen(false);
+    setActiveSlotId(null);
   };
 
   return (
@@ -330,47 +458,111 @@ export default function CampaignBuilder() {
                         <div className="space-y-4">
                           <div className="flex justify-between text-sm text-slate-400">
                             <span>Impression Range (Millions)</span>
-                            <span className="text-white">
-                              {(isShadowActive
-                                ? shadowImpressions[slot.id]?.[0] ??
-                                  slot.impressions[0]
-                                : impressionRanges[slot.id]?.[0] ??
-                                  slot.impressions[0]
-                              ).toFixed(1)}
-                              M -
-                              {(isShadowActive
-                                ? shadowImpressions[slot.id]?.[1] ??
-                                  slot.impressions[1]
-                                : impressionRanges[slot.id]?.[1] ??
-                                  slot.impressions[1]
-                              ).toFixed(1)}
-                              M
-                            </span>
+                            {isConfirmed ? (
+                              <span className="text-white">
+                                {(isDragging && activeSlotId === slot.id
+                                  ? newValues[0]
+                                  : isShadowActive
+                                  ? shadowImpressions[slot.id]?.[0] ??
+                                    slot.impressions[0]
+                                  : impressionRanges[slot.id]?.[0] ??
+                                    slot.impressions[0]
+                                ).toFixed(1)}
+                                M -
+                                {(isDragging && activeSlotId === slot.id
+                                  ? newValues[1]
+                                  : isShadowActive
+                                  ? shadowImpressions[slot.id]?.[1] ??
+                                    slot.impressions[1]
+                                  : impressionRanges[slot.id]?.[1] ??
+                                    slot.impressions[1]
+                                ).toFixed(1)}
+                                M
+                              </span>
+                            ) : (
+                              <span className="text-slate-500">Not set</span>
+                            )}
                           </div>
-                          <Slider
-                            defaultValue={[
-                              isShadowActive
-                                ? shadowImpressions[slot.id]?.[0] ??
-                                  slot.impressions[0]
-                                : impressionRanges[slot.id]?.[0] ??
-                                  slot.impressions[0],
-                              isShadowActive
-                                ? shadowImpressions[slot.id]?.[1] ??
-                                  slot.impressions[1]
-                                : impressionRanges[slot.id]?.[1] ??
-                                  slot.impressions[1],
-                            ]}
-                            min={0}
-                            max={10}
-                            step={0.1}
-                            onValueChange={(value) =>
-                              updateSlotImpressions(
-                                slot.id,
-                                value as [number, number]
-                              )
-                            }
-                            className="w-full"
-                          />
+                          <div className="relative">
+                            {isConfirmed ? (
+                              <>
+                                {/* Original slider (now visible on top) */}
+                                <Slider
+                                  value={[originalValues[0], originalValues[1]]}
+                                  min={0}
+                                  max={10}
+                                  step={0.1}
+                                  disabled={true}
+                                  className={
+                                    isDragging && activeSlotId === slot.id
+                                      ? "w-full pointer-events-none"
+                                      : "hidden"
+                                  }
+                                />
+
+                                {/* Shadow/new position slider (now in background) */}
+                                {isDragging && activeSlotId === slot.id && (
+                                  <div className="absolute inset-0 z-10 pointer-events-none">
+                                    <Slider
+                                      value={[newValues[0], newValues[1]]}
+                                      min={0}
+                                      max={10}
+                                      step={0.1}
+                                      disabled
+                                      className="w-full opacity-60"
+                                    />
+                                  </div>
+                                )}
+
+                                {/* Interactive slider (invisible during drag, handles the interaction) */}
+                                <div
+                                  className={
+                                    isDragging && activeSlotId === slot.id
+                                      ? "absolute inset-0 z-20"
+                                      : ""
+                                  }
+                                >
+                                  <Slider
+                                    value={[
+                                      isDragging && activeSlotId === slot.id
+                                        ? newValues[0]
+                                        : isShadowActive
+                                        ? shadowImpressions[slot.id]?.[0] ??
+                                          slot.impressions[0]
+                                        : impressionRanges[slot.id]?.[0] ??
+                                          slot.impressions[0],
+                                      isDragging && activeSlotId === slot.id
+                                        ? newValues[1]
+                                        : isShadowActive
+                                        ? shadowImpressions[slot.id]?.[1] ??
+                                          slot.impressions[1]
+                                        : impressionRanges[slot.id]?.[1] ??
+                                          slot.impressions[1],
+                                    ]}
+                                    min={0}
+                                    max={10}
+                                    step={0.1}
+                                    onValueChange={(value) =>
+                                      handleSliderChange(
+                                        slot.id,
+                                        value as [number, number]
+                                      )
+                                    }
+                                    onValueCommit={() =>
+                                      handleSliderChangeEnd(slot.id)
+                                    }
+                                    className={
+                                      isDragging && activeSlotId === slot.id
+                                        ? "w-full opacity-0"
+                                        : "w-full"
+                                    }
+                                  />
+                                </div>
+                              </>
+                            ) : (
+                              <div className="h-2 bg-slate-800 rounded-full w-full opacity-50"></div>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -381,6 +573,35 @@ export default function CampaignBuilder() {
           ))}
         </div>
       </div>
+
+      {/* Dialog for impression changes (completely different component from Drawer/Sheet) */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="bg-slate-900 border-slate-800 text-white max-w-md w-full mx-auto">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-white">
+              Update Impressions
+            </DialogTitle>
+            <DialogDescription className="text-slate-300">
+              How would you like to apply these changes?
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col sm:flex-row gap-3 items-center justify-center py-4">
+            <Button
+              variant="outline"
+              className="bg-sky-600 hover:bg-sky-700 text-white border-sky-700 w-full sm:w-auto"
+              onClick={applyRedistribute}
+            >
+              Re-distribute
+            </Button>
+            <Button
+              className="bg-sky-600 hover:bg-sky-700 text-white w-full sm:w-auto"
+              onClick={applyIncreaseTotal}
+            >
+              Increase total
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Sticky bottom section */}
       <div className="fixed bottom-0 left-0 right-0 bg-slate-950 border-t border-slate-800 z-50">
