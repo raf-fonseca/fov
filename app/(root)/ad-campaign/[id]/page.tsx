@@ -9,14 +9,13 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import GlbModel from "@/components/shared/GlbModel";
 import { motion } from "framer-motion";
 import ArenaModel from "@/components/shared/3D/ArenaModel";
 
 const Page = () => {
   const [step, setStep] = React.useState(1);
   const [openCart, setOpenCart] = React.useState(false);
-  const [selectedSlot, setSelectedSlot] = React.useState(2);
+  const [selectedSlot, setSelectedSlot] = React.useState<number>(1);
   const [showSlots, setShowSlots] = React.useState(false);
   const fileInputRef = React.useRef<HTMLInputElement | null>(null);
   const meshRef = React.useRef<THREE.Mesh | null>(null);
@@ -59,7 +58,7 @@ const Page = () => {
   //   fileInputRef.current.click(); // Trigger file picker
   // };
   return (
-    <div className="mt-[90px]  relative  flex flex-col gap-5 z-20 justify-end  w-full">
+    <div className="mt-[90px] relative flex flex-col gap-5 z-20 justify-end w-full">
       <div
         className="absolute left-10 z-50 top-6 bg-[#0B111B] border border-[#FFFFFF33] rounded-[12px] overflow-hidden transition-all duration-300"
         style={{
@@ -98,7 +97,8 @@ const Page = () => {
               className="max-h-[70vh] overflow-y-auto pr-2 space-y-3"
               style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
             >
-              {Array.from({ length: 2 }).map((_, index) => (
+              {/* Map through all available billboards */}
+              {Array.from({ length: 9 }).map((_, index) => (
                 <div
                   key={index}
                   onClick={() => setSelectedSlot(index + 1)}
@@ -108,7 +108,7 @@ const Page = () => {
                   }`}
                 >
                   <p className="text-lg 2xl:text-xl font-semibold mb-1">
-                    Vault Wall {index + 1}
+                    Billboard {index + 1}
                   </p>
                   <div className="flex items-center border-b border-[#FFFFFF]/20 py-3 mb-4 justify-between">
                     <p className="text-xs 2xl:text-sm capitalize text-primary-500">
@@ -159,11 +159,10 @@ const Page = () => {
         </div>
       </div>
 
-      <div className="   flex items-center w-full justify-center h-[87svh]  overflow-hidden">
-        {/* <GlbModel id={selectedSlot} /> */}
-        <ArenaModel />
+      <div className="flex items-center w-full justify-center h-[87svh] overflow-hidden">
+        <ArenaModel selectedSlotId={selectedSlot} />
       </div>
-      <div className="  wrapper flex flex-col items-center gap-4 pt-8  ">
+      <div className="wrapper flex flex-col items-center gap-4 pt-8">
         <div className="flex items-center justify-between w-full">
           <h1 className="text-xl 2xl:text-2xl font-semibold text-white">
             Pair This With:{" "}
@@ -172,9 +171,9 @@ const Page = () => {
             </span>
           </h1>
         </div>
-        <div className=" w-full py-5 flex items-center mb-8 flex-nowrap gap-5 overflow-x-auto max-w-full ">
+        <div className="w-full py-5 flex items-center mb-8 flex-nowrap gap-5 overflow-x-auto max-w-full">
           {Array.from({ length: 3 }).map((_, index) => (
-            <div key={index} className=" min-w-[360px] sm:min-w-[380px] ">
+            <div key={index} className="min-w-[360px] sm:min-w-[380px]">
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger>
@@ -188,7 +187,7 @@ const Page = () => {
                           alt="fortnite"
                           width={420}
                           height={420}
-                          className=" cursor-pointer object-cover w-full h-full"
+                          className="cursor-pointer object-cover w-full h-full"
                         />
 
                         {/* Dark Gradient Overlay for Better Text Visibility */}
@@ -212,24 +211,24 @@ const Page = () => {
                       Top 5 Highest-Traffic Game{" "}
                     </p>
                     <div className="flex items-center py-1.5 justify-between">
-                      <p className="text-sm capitalize  text-primary-500">
+                      <p className="text-sm capitalize text-primary-500">
                         plays
                       </p>
-                      <p className=" font-semibold text-white">
+                      <p className="font-semibold text-white">
                         40M - 55M / month
                       </p>
                     </div>
                     <div className="flex items-center py-1.5 justify-between">
-                      <p className="text-sm capitalize  text-primary-500">
+                      <p className="text-sm capitalize text-primary-500">
                         Impressions / placement:
                       </p>
-                      <p className=" font-semibold text-white">1.5B - 2.5B/m</p>
+                      <p className="font-semibold text-white">1.5B - 2.5B/m</p>
                     </div>
                     <div className="flex items-center py-1.5 justify-between">
-                      <p className="text-sm capitalize  text-primary-500">
+                      <p className="text-sm capitalize text-primary-500">
                         Assumed Demographic:
                       </p>
-                      <p className=" font-semibold text-white">12-18 y/o</p>
+                      <p className="font-semibold text-white">12-18 y/o</p>
                     </div>
                   </TooltipContent>
                 </Tooltip>
