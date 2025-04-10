@@ -21,6 +21,23 @@ const Page = () => {
   const [showSlots, setShowSlots] = React.useState(false);
   const fileInputRef = React.useRef<HTMLInputElement | null>(null);
   const meshRef = React.useRef<THREE.Mesh | null>(null);
+  const [canvasFocusable, setCanvasFocusable] = React.useState(true);
+
+  // Function to disable canvas focus when interacting with UI
+  const disableCanvasFocus = React.useCallback(() => {
+    setCanvasFocusable(false);
+  }, []);
+
+  // Function to re-enable canvas focus
+  const enableCanvasFocus = React.useCallback(() => {
+    setCanvasFocusable(true);
+  }, []);
+
+  // Modified version for mouse events
+  const disableCanvasFocusEvent = React.useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    setCanvasFocusable(false);
+  }, []);
 
   // const handleImageUpload = (mesh: THREE.Mesh) => {
   //   meshRef.current = mesh; // Store the selected mesh
@@ -67,6 +84,8 @@ const Page = () => {
           width: "fit-content",
           maxHeight: showSlots ? "80vh" : "auto", // Expands to 90% of viewport height when open
         }}
+        onMouseEnter={disableCanvasFocusEvent}
+        onMouseLeave={enableCanvasFocus}
       >
         <div className="xl:w-[400px] p-3.5 xl:px-5 2xl:px-6 flex flex-col items-start ">
           {/* Header Section - Always Visible */}
@@ -74,13 +93,21 @@ const Page = () => {
             <p className="2xl:text-xl text-lg font-semibold text-white">
               Select ad slot on the map:
             </p>
-            <button onClick={() => setShowSlots(!showSlots)}>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowSlots(!showSlots);
+              }}
+            >
               <Image
                 src="/toggle.svg"
                 width={20}
                 height={20}
                 alt="info"
                 className="2xl:w-5 2xl:h-5"
+                onClick={() => {
+                  setSelectedSlot(undefined);
+                }}
               />
             </button>
           </div>
@@ -103,7 +130,10 @@ const Page = () => {
               {Array.from({ length: 9 }).map((_, index) => (
                 <div
                   key={index}
-                  onClick={() => setSelectedSlot(index + 1)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedSlot(index + 1);
+                  }}
                   className={`bg-[#141C2A] w-full p-4 py-6 2xl:p-6 text-white cursor-pointer rounded-[12px] ${
                     selectedSlot === index + 1 &&
                     "border-primary-50/70 border-2"
@@ -162,9 +192,18 @@ const Page = () => {
       </div>
 
       <div className="flex items-center w-full justify-center h-[87svh] overflow-hidden">
-        <ArenaModel selectedSlotId={selectedSlot} />
+        <ArenaModel
+          selectedSlotId={selectedSlot}
+          canvasFocusable={canvasFocusable}
+          disableCanvasFocus={disableCanvasFocus}
+          enableCanvasFocus={enableCanvasFocus}
+        />
       </div>
-      <div className="wrapper flex flex-col items-center gap-4 pt-8">
+      <div
+        className="wrapper flex flex-col items-center gap-4 pt-8"
+        onMouseEnter={disableCanvasFocusEvent}
+        onMouseLeave={enableCanvasFocus}
+      >
         <div className="flex items-center justify-between w-full">
           <h1 className="text-xl 2xl:text-2xl font-semibold text-white">
             Pair This With:{" "}
@@ -180,7 +219,11 @@ const Page = () => {
                 <Tooltip>
                   <TooltipTrigger>
                     {" "}
-                    <Link href={`/ad-campaign/${index}`} passHref>
+                    <Link
+                      href={`/ad-campaign/${index}`}
+                      passHref
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       <div className="relative w-[380px] h-[210px] bg-[#101927] rounded-[12px] overflow-hidden flex items-center justify-center">
                         {/* Image */}
                         <Image

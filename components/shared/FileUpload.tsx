@@ -3,31 +3,90 @@
 import type React from "react";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import * as THREE from "three";
 
 interface FileUploadProps {
   onClose: () => void;
   billboardId: number | null;
   onImageUploaded?: (billboardId: number, textureUrl: string) => void;
+  disableCanvasFocus?: () => void;
+  enableCanvasFocus?: () => void;
 }
 
 export default function FileUpload({
   onClose,
   billboardId,
   onImageUploaded,
+  disableCanvasFocus,
+  enableCanvasFocus,
 }: FileUploadProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [uploadStatus, setUploadStatus] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
+  // Disable canvas focus when the component mounts
+  useEffect(() => {
+    if (disableCanvasFocus) {
+      disableCanvasFocus();
+    }
+
+    // Re-enable canvas focus when the component unmounts
+    return () => {
+      if (enableCanvasFocus) {
+        enableCanvasFocus();
+      }
+    };
+  }, [disableCanvasFocus, enableCanvasFocus]);
+
+  // Original File Upload functionality
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     setIsDragging(true);
   };
 
-  const handleDragLeave = () => {
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
     setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+      processFile(files[0]);
+    }
+  };
+
+  const handleFileSelect = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    fileInputRef.current?.click();
+  };
+
+  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    e.stopPropagation();
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      processFile(files[0]);
+    }
+  };
+
+  const handleCloseClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    // Ensure canvas focus is enabled before closing
+    if (enableCanvasFocus) {
+      enableCanvasFocus();
+    }
+
+    onClose();
   };
 
   const processFile = (file: File) => {
@@ -55,10 +114,12 @@ export default function FileUpload({
         onImageUploaded(billboardId, result);
         setUploadStatus("Upload successful!");
 
-        // Close the popup after a delay
-        setTimeout(() => {
-          onClose();
-        }, 1500);
+        // Enable canvas focus after successful upload with a delay
+        if (enableCanvasFocus) {
+          setTimeout(() => {
+            enableCanvasFocus();
+          }, 1500); // Short delay to allow user to see success message
+        }
       }
     };
 
@@ -69,29 +130,20 @@ export default function FileUpload({
     reader.readAsDataURL(file);
   };
 
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-
-    const files = e.dataTransfer.files;
-    if (files.length > 0) {
-      processFile(files[0]);
-    }
-  };
-
-  const handleFileSelect = () => {
-    fileInputRef.current?.click();
-  };
-
-  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (files && files.length > 0) {
-      processFile(files[0]);
-    }
-  };
-
   return (
-    <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 dark">
+    <div
+      className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 dark"
+      onClick={(e) => e.stopPropagation()}
+      onMouseDown={(e) => e.stopPropagation()}
+      onMouseUp={(e) => e.stopPropagation()}
+      onKeyDown={(e) => e.stopPropagation()}
+      onFocus={(e) => {
+        // Make sure we don't have canvas focus when this component gets focus
+        if (disableCanvasFocus) {
+          disableCanvasFocus();
+        }
+      }}
+    >
       <div className="bg-zinc-900 border border-zinc-800 rounded-lg shadow-lg w-full max-w-2xl">
         <div className="flex justify-between px-4 py-2 items-center">
           <h2 className="text-white font-semibold">
@@ -101,7 +153,7 @@ export default function FileUpload({
             variant="ghost"
             size="icon"
             className="h-8 w-8"
-            onClick={onClose}
+            onClick={handleCloseClick}
           >
             <X className="h-4 w-4 text-white" />
           </Button>

@@ -6,7 +6,11 @@ import { useRef, useState, useEffect } from "react";
 import * as THREE from "three";
 
 // Custom flying controls
-const FlyControls = () => {
+interface FlyControlsProps {
+  canBeFocused?: boolean;
+}
+
+const FlyControls: React.FC<FlyControlsProps> = ({ canBeFocused = true }) => {
   const { camera } = useThree();
   const moveState = useRef({
     forward: false,
@@ -22,9 +26,19 @@ const FlyControls = () => {
   const [isLocked, setIsLocked] = useState(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
 
+  // Unlock pointer if canBeFocused becomes false
+  useEffect(() => {
+    if (!canBeFocused && isLocked && document.pointerLockElement) {
+      document.exitPointerLock();
+    }
+  }, [canBeFocused, isLocked]);
+
   // Set up key listeners
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't handle keys if controls shouldn't be focused
+      if (!canBeFocused) return;
+
       // Prevent default scrolling for navigation keys
       if (
         [
@@ -66,6 +80,9 @@ const FlyControls = () => {
     };
 
     const handleKeyUp = (e: KeyboardEvent) => {
+      // Don't handle keys if controls shouldn't be focused
+      if (!canBeFocused) return;
+
       // Prevent default for navigation keys
       if (
         [
@@ -108,7 +125,7 @@ const FlyControls = () => {
 
     // Prevent scrolling on wheel events when pointer is locked
     const handleWheel = (e: WheelEvent) => {
-      if (isLocked) {
+      if (isLocked && canBeFocused) {
         e.preventDefault();
       }
     };
@@ -122,7 +139,7 @@ const FlyControls = () => {
       window.removeEventListener("keyup", handleKeyUp);
       window.removeEventListener("wheel", handleWheel);
     };
-  }, [isLocked]);
+  }, [isLocked, canBeFocused]);
 
   // Handle pointer lock state changes
   useEffect(() => {
@@ -131,7 +148,7 @@ const FlyControls = () => {
       setIsLocked(isCurrentlyLocked);
 
       // When locked, prevent scrolling
-      if (isCurrentlyLocked) {
+      if (isCurrentlyLocked && canBeFocused) {
         document.body.style.overflow = "hidden";
       } else {
         document.body.style.overflow = "";
@@ -144,11 +161,11 @@ const FlyControls = () => {
       // Reset overflow
       document.body.style.overflow = "";
     };
-  }, []);
+  }, [canBeFocused]);
 
   // Movement logic in animation frame
   useFrame((_, delta) => {
-    if (!isLocked) return;
+    if (!isLocked || !canBeFocused) return;
 
     // Movement speed (adjust as needed)
     const speed = 20;
@@ -175,7 +192,7 @@ const FlyControls = () => {
     camera.translateZ(velocity.current.z);
   });
 
-  return <PointerLockControls ref={pointerLockRef} />;
+  return canBeFocused ? <PointerLockControls ref={pointerLockRef} /> : null;
 };
 
 // Crosshair component

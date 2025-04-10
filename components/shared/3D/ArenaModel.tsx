@@ -104,9 +104,17 @@ const CameraController: React.FC<CameraControllerProps> = ({
 
 interface ArenaModelProps {
   selectedSlotId?: number;
+  canvasFocusable?: boolean;
+  disableCanvasFocus?: () => void;
+  enableCanvasFocus?: () => void;
 }
 
-const ArenaModel: React.FC<ArenaModelProps> = ({ selectedSlotId }) => {
+const ArenaModel: React.FC<ArenaModelProps> = ({
+  selectedSlotId,
+  canvasFocusable = true,
+  disableCanvasFocus,
+  enableCanvasFocus,
+}) => {
   const [cameraTarget, setCameraTarget] = useState<
     [number, number, number] | null
   >(null);
@@ -224,14 +232,25 @@ const ArenaModel: React.FC<ArenaModelProps> = ({ selectedSlotId }) => {
 
   const handleBillboardClick = useCallback(
     (id: number) => {
-      setSelectedBillboardId(id);
-      setSelectedSlot(id);
-      setShowUploadPopup(true);
+      // Only proceed if canvas is focusable
+      if (!canvasFocusable) {
+        return; // Exit if canvas is not focusable
+      }
 
-      // Move camera to the billboard when it's clicked
-      moveCameraToBillboard(id);
+      // Check if pointer is locked (canvas is focused)
+      if (document.pointerLockElement) {
+        setSelectedBillboardId(id);
+        setSelectedSlot(id);
+        setShowUploadPopup(true);
+
+        // Move camera to the billboard when it's clicked
+        moveCameraToBillboard(id);
+      } else {
+        // If pointer is not locked, don't show popup
+        console.log("Canvas must be focused to interact with billboards");
+      }
     },
-    [moveCameraToBillboard]
+    [moveCameraToBillboard, canvasFocusable]
   );
 
   const handleClosePopup = useCallback(() => {
@@ -315,7 +334,11 @@ const ArenaModel: React.FC<ArenaModelProps> = ({ selectedSlotId }) => {
         </div>
       </div>
 
-      <Canvas camera={{ position: [0, 0, 10], fov: 75 }} shadows>
+      <Canvas
+        camera={{ position: [0, 0, 10], fov: 75 }}
+        shadows
+        style={{ touchAction: "none" }} // Ensures touch events don't trigger scrolling
+      >
         {/* Import lighting from separate component */}
         <Lighting />
 
@@ -340,7 +363,7 @@ const ArenaModel: React.FC<ArenaModelProps> = ({ selectedSlotId }) => {
         )}
 
         {/* Import flying controls from separate component */}
-        <FlyControls />
+        <FlyControls canBeFocused={canvasFocusable} />
       </Canvas>
 
       {/* File Upload Popup - outside the Canvas to avoid R3F issues */}
@@ -349,6 +372,8 @@ const ArenaModel: React.FC<ArenaModelProps> = ({ selectedSlotId }) => {
           onClose={handleClosePopup}
           billboardId={selectedBillboardId}
           onImageUploaded={handleImageUploaded}
+          disableCanvasFocus={disableCanvasFocus}
+          enableCanvasFocus={enableCanvasFocus}
         />
       )}
 

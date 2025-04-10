@@ -144,8 +144,14 @@ const Billboard: React.FC<BillboardProps> = ({
 
   const handleClick = (e: ThreeEvent<MouseEvent>) => {
     e.stopPropagation();
-    onSelect(id);
-    onBillboardClick(id);
+
+    // Only proceed if the canvas is focused (pointer is locked)
+    if (document.pointerLockElement) {
+      onSelect(id);
+      onBillboardClick(id);
+    } else {
+      console.log("Canvas must be focused to interact with billboards");
+    }
   };
 
   // Consistent colors regardless of selection state
