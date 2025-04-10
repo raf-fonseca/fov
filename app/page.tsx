@@ -313,7 +313,7 @@ export default function Home() {
                   className="cursor-pointer object-cover w-full h-full"
                 />
                 <Link
-                  href={"/ad-campaign"}
+                  href={"/ad-campaign/1"}
                   className="bg-primary-50 absolute bottom-20 text-white gap-2 font-semibold rounded-[8px] right-5 px-8 py-3.5 flex items-center"
                 >
                   Continue <FaArrowRightLong className="text-lg" />

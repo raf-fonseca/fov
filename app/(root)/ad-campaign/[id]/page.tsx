@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/tooltip";
 import GlbModel from "@/components/shared/GlbModel";
 import { motion } from "framer-motion";
+import ArenaModel from "@/components/shared/ArenaModel";
 const Page = () => {
   const [step, setStep] = React.useState(1);
   const [openCart, setOpenCart] = React.useState(false);
@@ -158,7 +159,8 @@ const Page = () => {
       </div>
 
       <div className="   flex items-center w-full justify-center h-[87svh]  overflow-hidden">
-        <GlbModel id={selectedSlot} />
+        {/* <GlbModel id={selectedSlot} /> */}
+        <ArenaModel />
       </div>
       <div className="  wrapper flex flex-col items-center gap-4 pt-8  ">
         <div className="flex items-center justify-between w-full">
