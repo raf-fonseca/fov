@@ -15,7 +15,9 @@ import ArenaModel from "@/components/shared/3D/ArenaModel";
 const Page = () => {
   const [step, setStep] = React.useState(1);
   const [openCart, setOpenCart] = React.useState(false);
-  const [selectedSlot, setSelectedSlot] = React.useState<number>(1);
+  const [selectedSlot, setSelectedSlot] = React.useState<number | undefined>(
+    undefined
+  );
   const [showSlots, setShowSlots] = React.useState(false);
   const fileInputRef = React.useRef<HTMLInputElement | null>(null);
   const meshRef = React.useRef<THREE.Mesh | null>(null);

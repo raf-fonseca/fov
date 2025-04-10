@@ -178,6 +178,69 @@ const FlyControls = () => {
   return <PointerLockControls ref={pointerLockRef} />;
 };
 
+// Crosshair component
+export const Crosshair = () => (
+  <div
+    style={{
+      position: "absolute",
+      top: "50%",
+      left: "50%",
+      transform: "translate(-50%, -50%)",
+      zIndex: 1000,
+      pointerEvents: "none",
+    }}
+  >
+    <div
+      style={{
+        width: "16px",
+        height: "16px",
+        position: "relative",
+      }}
+    >
+      {/* Horizontal line */}
+      <div
+        style={{
+          position: "absolute",
+          top: "50%",
+          left: 0,
+          width: "16px",
+          height: "2px",
+          backgroundColor: "white",
+          transform: "translateY(-50%)",
+          opacity: 0.7,
+        }}
+      />
+      {/* Vertical line */}
+      <div
+        style={{
+          position: "absolute",
+          top: 0,
+          left: "50%",
+          width: "2px",
+          height: "16px",
+          backgroundColor: "white",
+          transform: "translateX(-50%)",
+          opacity: 0.7,
+        }}
+      />
+      {/* Center dot */}
+      <div
+        style={{
+          position: "absolute",
+          top: "50%",
+          left: "50%",
+          width: "4px",
+          height: "4px",
+          backgroundColor: "white",
+          borderRadius: "50%",
+          transform: "translate(-50%, -50%)",
+          opacity: 0.9,
+        }}
+      />
+    </div>
+  </div>
+);
+
 // Instructions overlay component
 export const ControlsInstructions = () => (
   <div

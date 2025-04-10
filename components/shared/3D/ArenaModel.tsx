@@ -2,11 +2,12 @@
 
 import { Canvas, useThree } from "@react-three/fiber";
 import { useGLTF } from "@react-three/drei";
-import { Suspense, useRef, useState, useEffect } from "react";
+import { Suspense, useRef, useState, useEffect, useCallback } from "react";
 import * as THREE from "three";
 import FlyControls, { ControlsInstructions } from "./Controller";
 import Lighting from "./Lighting";
 import AdSlots, { billboardData } from "./AdSlots";
+import FileUpload from "@/components/shared/FileUpload";
 
 const Model = () => {
   const { scene } = useGLTF("/main.glb");
@@ -116,87 +117,72 @@ const ArenaModel: React.FC<ArenaModelProps> = ({ selectedSlotId }) => {
   const [selectedSlot, setSelectedSlot] = useState<number | undefined>(
     selectedSlotId
   );
+  const canvasContainerRef = useRef<HTMLDivElement>(null);
 
-  // Helper function to calculate the shortest rotation path
-  const calculateOptimalRotation = (
-    currentRotation: THREE.Euler,
-    targetYRotation: number
-  ): number => {
-    // Get current y rotation and normalize to 0-2π range
-    let currentY = currentRotation.y % (Math.PI * 2);
-    if (currentY < 0) currentY += Math.PI * 2;
+  // File upload state
+  const [showUploadPopup, setShowUploadPopup] = useState(false);
+  const [selectedBillboardId, setSelectedBillboardId] = useState<number | null>(
+    null
+  );
 
-    // Normalize target rotation
-    let targetY = targetYRotation % (Math.PI * 2);
-    if (targetY < 0) targetY += Math.PI * 2;
+  // Texture state - store textures mapped to billboard IDs
+  const [billboardTextures, setBillboardTextures] = useState<
+    Record<number, string>
+  >({});
 
-    // Calculate the difference
-    let diff = targetY - currentY;
+  // Move camera to position in front of billboard
+  const moveCameraToBillboard = useCallback((id: number) => {
+    const billboard = billboardData.find((b) => b.id === id);
+    if (billboard) {
+      // Find position in front of the billboard
+      const rotationY = billboard.rotation[1];
+      const offsetX = Math.sin(rotationY) * 10; // Slightly closer (10 units) to see the ad better
+      const offsetZ = Math.cos(rotationY) * 10;
 
-    // Find the shortest path
-    if (Math.abs(diff) > Math.PI) {
-      if (diff > 0) {
-        diff -= Math.PI * 2;
-      } else {
-        diff += Math.PI * 2;
-      }
+      // Calculate camera position
+      const targetPosition: [number, number, number] = [
+        billboard.position[0] + offsetX,
+        billboard.position[1],
+        billboard.position[2] + offsetZ,
+      ];
+
+      // Create look-at camera rotation
+      const lookAt = new THREE.Vector3(
+        billboard.position[0],
+        billboard.position[1],
+        billboard.position[2]
+      );
+      const cameraPos = new THREE.Vector3(
+        targetPosition[0],
+        targetPosition[1],
+        targetPosition[2]
+      );
+      const direction = new THREE.Vector3()
+        .subVectors(lookAt, cameraPos)
+        .normalize();
+
+      // Use matrix to calculate proper rotation
+      const lookAtMatrix = new THREE.Matrix4();
+      lookAtMatrix.lookAt(cameraPos, lookAt, new THREE.Vector3(0, 1, 0));
+      const quaternion = new THREE.Quaternion().setFromRotationMatrix(
+        lookAtMatrix
+      );
+      const euler = new THREE.Euler().setFromQuaternion(quaternion);
+
+      setCameraTarget(targetPosition);
+      setCameraRotation([euler.x, euler.y, euler.z]);
+      setIsTransitioning(true);
     }
-
-    return currentY + diff;
-  };
+  }, []);
 
   useEffect(() => {
     setSelectedSlot(selectedSlotId);
 
     // If external selection changes, teleport camera to that billboard
     if (selectedSlotId && selectedSlotId !== selectedSlot) {
-      const billboard = billboardData.find((b) => b.id === selectedSlotId);
-      if (billboard) {
-        // Find position in front of the billboard
-        const rotationY = billboard.rotation[1];
-        const offsetX = Math.sin(rotationY) * 15;
-        const offsetZ = Math.cos(rotationY) * 15;
-
-        // Calculate camera position and rotation
-        setCameraTarget([
-          billboard.position[0] + offsetX,
-          billboard.position[1],
-          billboard.position[2] + offsetZ,
-        ]);
-
-        // Calculate the look-at rotation (to stare at the billboard)
-        const lookAtVector = new THREE.Vector3();
-        lookAtVector
-          .subVectors(
-            new THREE.Vector3(
-              billboard.position[0],
-              billboard.position[1],
-              billboard.position[2]
-            ),
-            new THREE.Vector3(
-              billboard.position[0] + offsetX,
-              billboard.position[1],
-              billboard.position[2] + offsetZ
-            )
-          )
-          .normalize();
-
-        // Convert look-at direction to rotation
-        const lookAtMatrix = new THREE.Matrix4();
-        lookAtMatrix.lookAt(
-          new THREE.Vector3(0, 0, 0),
-          lookAtVector,
-          new THREE.Vector3(0, 1, 0)
-        );
-        const lookAtQuaternion = new THREE.Quaternion();
-        lookAtQuaternion.setFromRotationMatrix(lookAtMatrix);
-        const euler = new THREE.Euler().setFromQuaternion(lookAtQuaternion);
-
-        setCameraRotation([euler.x, euler.y, euler.z]);
-        setIsTransitioning(true);
-      }
+      moveCameraToBillboard(selectedSlotId);
     }
-  }, [selectedSlotId, selectedSlot]);
+  }, [selectedSlotId, selectedSlot, moveCameraToBillboard]);
 
   const handleSelectSlot = (
     id: number,
@@ -236,8 +222,99 @@ const ArenaModel: React.FC<ArenaModelProps> = ({ selectedSlotId }) => {
     setIsTransitioning(true);
   };
 
+  const handleBillboardClick = useCallback(
+    (id: number) => {
+      setSelectedBillboardId(id);
+      setSelectedSlot(id);
+      setShowUploadPopup(true);
+
+      // Move camera to the billboard when it's clicked
+      moveCameraToBillboard(id);
+    },
+    [moveCameraToBillboard]
+  );
+
+  const handleClosePopup = useCallback(() => {
+    setShowUploadPopup(false);
+  }, []);
+
+  // Handle uploaded image by setting it in the billboardTextures state
+  const handleImageUploaded = useCallback(
+    (billboardId: number, textureUrl: string) => {
+      setBillboardTextures((prev) => ({
+        ...prev,
+        [billboardId]: textureUrl,
+      }));
+    },
+    []
+  );
+
   return (
-    <div style={{ width: "100%", height: "100%" }}>
+    <div
+      style={{ width: "100%", height: "100%", position: "relative" }}
+      ref={canvasContainerRef}
+    >
+      {/* Crosshair overlay positioned relative to Canvas */}
+      <div
+        style={{
+          position: "absolute",
+          top: "50%",
+          left: "50%",
+          transform: "translate(-50%, -50%)",
+          zIndex: 10,
+          pointerEvents: "none",
+        }}
+      >
+        <div
+          style={{
+            width: "16px",
+            height: "16px",
+            position: "relative",
+          }}
+        >
+          {/* Horizontal line */}
+          <div
+            style={{
+              position: "absolute",
+              top: "50%",
+              left: 0,
+              width: "16px",
+              height: "2px",
+              backgroundColor: "white",
+              transform: "translateY(-50%)",
+              opacity: 0.7,
+            }}
+          />
+          {/* Vertical line */}
+          <div
+            style={{
+              position: "absolute",
+              top: 0,
+              left: "50%",
+              width: "2px",
+              height: "16px",
+              backgroundColor: "white",
+              transform: "translateX(-50%)",
+              opacity: 0.7,
+            }}
+          />
+          {/* Center dot */}
+          <div
+            style={{
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              width: "4px",
+              height: "4px",
+              backgroundColor: "white",
+              borderRadius: "50%",
+              transform: "translate(-50%, -50%)",
+              opacity: 0.9,
+            }}
+          />
+        </div>
+      </div>
+
       <Canvas camera={{ position: [0, 0, 10], fov: 75 }} shadows>
         {/* Import lighting from separate component */}
         <Lighting />
@@ -249,6 +326,8 @@ const ArenaModel: React.FC<ArenaModelProps> = ({ selectedSlotId }) => {
           <AdSlots
             onSelectSlot={handleSelectSlot}
             selectedSlot={selectedSlot}
+            onBillboardClick={handleBillboardClick}
+            billboardTextures={billboardTextures}
           />
         </Suspense>
 
@@ -263,6 +342,15 @@ const ArenaModel: React.FC<ArenaModelProps> = ({ selectedSlotId }) => {
         {/* Import flying controls from separate component */}
         <FlyControls />
       </Canvas>
+
+      {/* File Upload Popup - outside the Canvas to avoid R3F issues */}
+      {showUploadPopup && (
+        <FileUpload
+          onClose={handleClosePopup}
+          billboardId={selectedBillboardId}
+          onImageUploaded={handleImageUploaded}
+        />
+      )}
 
       {/* Import instructions overlay from Controller */}
       <ControlsInstructions />
