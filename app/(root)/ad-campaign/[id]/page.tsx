@@ -11,7 +11,8 @@ import {
 } from "@/components/ui/tooltip";
 import GlbModel from "@/components/shared/GlbModel";
 import { motion } from "framer-motion";
-import ArenaModel from "@/components/shared/ArenaModel";
+import ArenaModel from "@/components/shared/3D/ArenaModel";
+
 const Page = () => {
   const [step, setStep] = React.useState(1);
   const [openCart, setOpenCart] = React.useState(false);
