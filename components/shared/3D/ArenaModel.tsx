@@ -6,6 +6,7 @@ import { Suspense } from "react";
 import * as THREE from "three";
 import FlyControls, { ControlsInstructions } from "./Controller";
 import Lighting from "./Lighting";
+import AdSlots from "./AdSlots";
 
 const Model = () => {
   const { scene } = useGLTF("/main.glb");
@@ -22,6 +23,9 @@ const ArenaModel = () => {
 
         <Suspense fallback={null}>
           <Model />
+
+          {/* Add the billboards */}
+          <AdSlots />
         </Suspense>
 
         {/* Import flying controls from separate component */}
