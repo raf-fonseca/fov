@@ -128,6 +128,7 @@ const Billboard: React.FC<BillboardProps> = ({
         loadedTex.wrapS = THREE.ClampToEdgeWrapping;
         loadedTex.wrapT = THREE.ClampToEdgeWrapping;
         loadedTex.minFilter = THREE.LinearFilter;
+        loadedTex.colorSpace = THREE.SRGBColorSpace; // Use correct color space property
 
         // Get image dimensions
         const imageWidth = loadedTex.image.width;
@@ -137,11 +138,14 @@ const Billboard: React.FC<BillboardProps> = ({
 
         // Apply texture to material with proper settings
         if (contentRef.current) {
-          // Create a new MeshBasicMaterial that doesn't respond to lighting
+          // Create a new MeshBasicMaterial that ignores lighting
           const material = new THREE.MeshBasicMaterial({
             color: 0xffffff,
             map: loadedTex,
             side: THREE.DoubleSide,
+            toneMapped: false, // Disable tone mapping for more accurate colors
+            transparent: true,
+            opacity: 1.0,
           });
 
           // Set texture repeat and offset based on aspect ratio
@@ -211,12 +215,19 @@ const Billboard: React.FC<BillboardProps> = ({
       >
         <planeGeometry args={[size[0], size[1]]} />
         {!texture ? (
-          <meshBasicMaterial color={materialColor} side={THREE.DoubleSide} />
+          <meshBasicMaterial
+            color={materialColor}
+            side={THREE.DoubleSide}
+            toneMapped={false}
+          />
         ) : (
           <meshBasicMaterial
             color={materialColor}
             map={loadedTexture}
             side={THREE.DoubleSide}
+            toneMapped={false}
+            transparent={true}
+            opacity={1.0}
           />
         )}
       </mesh>

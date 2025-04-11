@@ -4,10 +4,11 @@ import { Canvas, useThree } from "@react-three/fiber";
 import { useGLTF } from "@react-three/drei";
 import { Suspense, useRef, useState, useEffect, useCallback } from "react";
 import * as THREE from "three";
-import FlyControls, { ControlsInstructions } from "./Controller";
+// import FlyControls, { ControlsInstructions } from "./Controller";
 import Lighting from "./Lighting";
 import AdSlots, { billboardData } from "./AdSlots";
 import FileUpload from "@/components/shared/FileUpload";
+import FlyControls from "./Controller";
 
 const Model = () => {
   const { scene } = useGLTF("/main.glb");
@@ -420,7 +421,7 @@ const ArenaModel: React.FC<ArenaModelProps> = ({
       )}
 
       {/* Import instructions overlay from Controller */}
-      <ControlsInstructions />
+      {/* <ControlsInstructions /> */}
     </div>
   );
 };

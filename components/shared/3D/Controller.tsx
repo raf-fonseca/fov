@@ -259,29 +259,29 @@ export const Crosshair = () => (
 );
 
 // Instructions overlay component
-export const ControlsInstructions = () => (
-  <div
-    style={{
-      position: "absolute",
-      bottom: 20,
-      left: 20,
-      background: "rgba(0,0,0,0.5)",
-      color: "white",
-      padding: "10px",
-      borderRadius: "5px",
-      pointerEvents: "none",
-    }}
-  >
-    Click to enable controls
-    <br />
-    WASD: Move around
-    <br />
-    Space: Move up
-    <br />
-    Shift: Move down
-    <br />
-    Mouse: Look around
-  </div>
-);
+// export const ControlsInstructions = () => (
+//   <div
+//     style={{
+//       position: "absolute",
+//       bottom: 20,
+//       left: 20,
+//       background: "rgba(0,0,0,0.5)",
+//       color: "white",
+//       padding: "10px",
+//       borderRadius: "5px",
+//       pointerEvents: "none",
+//     }}
+//   >
+//     Click to enable controls
+//     <br />
+//     WASD: Move around
+//     <br />
+//     Space: Move up
+//     <br />
+//     Shift: Move down
+//     <br />
+//     Mouse: Look around
+//   </div>
+// );
 
 export default FlyControls;
