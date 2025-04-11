@@ -261,7 +261,7 @@ export default function CampaignBuilder() {
           </div>
         ),
         {
-          duration: 2000,
+          duration: 3000,
         }
       );
     }
@@ -272,23 +272,41 @@ export default function CampaignBuilder() {
     const diff = newValue - originalValue;
     const newTotal = Math.round(totalImpressions + diff);
     setTotalImpressions(newTotal);
-    setIsConfirmed(false);
-    setTempTotalImpressions(newTotal.toString());
-    handleDialogClose();
+    setTempTotalImpressions(formatNumberWithCommas(newTotal));
 
-    window.scrollTo({
-      top: 0,
-      behavior: "smooth",
-    });
+    // Redistribute impressions based on the new total
+    distributeImpressions(newTotal);
 
-    setTimeout(() => {
-      const inputElement = document.querySelector(
-        'input[value="' + newTotal + '"]'
-      );
-      if (inputElement instanceof HTMLElement) {
-        inputElement.focus();
+    // Show toast with the new total
+    toast.success(
+      (t) => (
+        <div className="flex items-center justify-between gap-2 w-full">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                setTotalImpressions(totalImpressions);
+                setTempTotalImpressions(
+                  formatNumberWithCommas(totalImpressions)
+                );
+                distributeImpressions(totalImpressions);
+                toast.dismiss(t.id);
+              }}
+              className="text-sky-400 hover:text-sky-300 p-1 hover:bg-slate-700 rounded"
+            >
+              <Undo2 size={16} />
+            </button>
+            <span>
+              Total impressions updated to {formatNumberWithSuffix(newTotal)}
+            </span>
+          </div>
+        </div>
+      ),
+      {
+        duration: 3000,
       }
-    }, 500);
+    );
+
+    handleDialogClose();
   };
 
   const handleDialogClose = () => {
