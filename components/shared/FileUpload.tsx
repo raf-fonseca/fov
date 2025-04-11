@@ -4,9 +4,11 @@ import type React from "react";
 import { X, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import * as THREE from "three";
 import { motion, AnimatePresence } from "framer-motion";
+import Cropper from "react-easy-crop";
+import type { Area } from "react-easy-crop";
 
 interface FileUploadProps {
   onClose: () => void;
@@ -32,17 +34,10 @@ export default function FileUpload({
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  // Image adjustment states
-  const [zoomLevel, setZoomLevel] = useState(1);
-  const [position, setPosition] = useState({ x: 0, y: 0 });
-  const [isDraggingImage, setIsDraggingImage] = useState(false);
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-  const containerRef = useRef<HTMLDivElement>(null);
-  const imageRef = useRef<HTMLDivElement>(null);
-  const [initialTouchDistance, setInitialTouchDistance] = useState<
-    number | null
-  >(null);
-  const [initialZoomLevel, setInitialZoomLevel] = useState<number>(1);
+  // React Easy Crop states
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
 
   // Calculate aspect ratio for the crop area based on billboard dimensions
   const billboardAspectRatio =
@@ -150,270 +145,107 @@ export default function FileUpload({
       setTimeout(() => {
         setIsSuccess(false);
         setCurrentStep("adjust");
-        // Reset position and zoom when entering adjust step
-        setPosition({ x: 0, y: 0 });
-        setZoomLevel(1);
+        // Reset crop values
+        setCrop({ x: 0, y: 0 });
+        setZoom(1);
       }, 1500);
     }, 1000);
   };
 
-  // Image adjustment handlers
-  const handleImageMouseDown = (e: React.MouseEvent) => {
-    e.preventDefault();
-    setIsDraggingImage(true);
-    setDragStart({
-      x: e.clientX - position.x,
-      y: e.clientY - position.y,
-    });
-  };
+  // Handle Cropper completion
+  const onCropComplete = useCallback(
+    (croppedArea: Area, croppedAreaPixels: Area) => {
+      setCroppedAreaPixels(croppedAreaPixels);
+    },
+    []
+  );
 
-  const handleImageMouseMove = (e: React.MouseEvent) => {
-    if (isDraggingImage) {
-      const newX = e.clientX - dragStart.x;
-      const newY = e.clientY - dragStart.y;
-      setPosition({ x: newX, y: newY });
-    }
-  };
+  // Generate cropped image using canvas
+  const createCroppedImage = async () => {
+    if (!previewUrl || !croppedAreaPixels) return null;
 
-  const handleImageMouseUp = () => {
-    setIsDraggingImage(false);
-  };
+    try {
+      const image = new Image();
+      image.src = previewUrl;
 
-  const handleTouchStart = (e: React.TouchEvent) => {
-    if (e.touches.length === 1) {
-      // Single touch for dragging
-      setIsDraggingImage(true);
-      setDragStart({
-        x: e.touches[0].clientX - position.x,
-        y: e.touches[0].clientY - position.y,
+      await new Promise((resolve) => {
+        image.onload = resolve;
       });
-    } else if (e.touches.length === 2) {
-      // Two touches for pinch zoom
-      const touch1 = e.touches[0];
-      const touch2 = e.touches[1];
-      const distance = Math.hypot(
-        touch2.clientX - touch1.clientX,
-        touch2.clientY - touch1.clientY
+
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+
+      if (!ctx) {
+        throw new Error("No 2d context");
+      }
+
+      // Set canvas dimensions to match the cropped area
+      const width = croppedAreaPixels.width;
+      const height = croppedAreaPixels.height;
+      canvas.width = width;
+      canvas.height = height;
+
+      // Draw the cropped image onto the canvas
+      ctx.drawImage(
+        image,
+        croppedAreaPixels.x,
+        croppedAreaPixels.y,
+        width,
+        height,
+        0,
+        0,
+        width,
+        height
       );
-      setInitialTouchDistance(distance);
-      setInitialZoomLevel(zoomLevel);
+
+      return canvas.toDataURL("image/png");
+    } catch (e) {
+      console.error("Error creating cropped image: ", e);
+      return null;
     }
   };
 
-  const handleTouchMove = (e: React.TouchEvent) => {
-    e.preventDefault(); // Prevent scrolling while adjusting
+  const handleApplyImage = async () => {
+    if (!billboardId) return;
 
-    if (e.touches.length === 1 && isDraggingImage) {
-      // Handle dragging
-      const newX = e.touches[0].clientX - dragStart.x;
-      const newY = e.touches[0].clientY - dragStart.y;
-      setPosition({ x: newX, y: newY });
-    } else if (e.touches.length === 2 && initialTouchDistance !== null) {
-      // Handle pinch zoom
-      const touch1 = e.touches[0];
-      const touch2 = e.touches[1];
-      const distance = Math.hypot(
-        touch2.clientX - touch1.clientX,
-        touch2.clientY - touch1.clientY
-      );
+    try {
+      // Show loading state
+      setIsUploading(true);
 
-      const scale = distance / initialTouchDistance;
-      const newZoom = Math.max(0.5, Math.min(3, initialZoomLevel * scale));
-      setZoomLevel(newZoom);
+      // Create the cropped image
+      const croppedImage = await createCroppedImage();
+
+      if (!croppedImage || !onImageUploaded) {
+        throw new Error("Failed to create cropped image");
+      }
+
+      // Apply the cropped image to the billboard
+      onImageUploaded(billboardId, croppedImage);
+
+      // Show success state
+      setIsUploading(false);
+      setIsSuccess(true);
+
+      // Close after delay
+      setTimeout(() => {
+        if (enableCanvasFocus) {
+          enableCanvasFocus();
+        }
+        setIsSuccess(false);
+        onClose();
+      }, 1500);
+    } catch (error) {
+      console.error("Error applying image:", error);
+      setIsUploading(false);
+      alert("Failed to process the image. Please try again.");
     }
-  };
-
-  const handleTouchEnd = () => {
-    setIsDraggingImage(false);
-    setInitialTouchDistance(null);
-  };
-
-  const handleZoomChange = (value: number[]) => {
-    setZoomLevel(value[0]);
-  };
-
-  const handleWheel = (e: React.WheelEvent) => {
-    e.preventDefault();
-    const delta = e.deltaY * -0.01;
-    const newZoom = Math.max(0.5, Math.min(3, zoomLevel + delta));
-    setZoomLevel(newZoom);
   };
 
   const handleCancelAdjust = () => {
     setCurrentStep("upload");
     setPreviewUrl(null);
-    setZoomLevel(1);
-    setPosition({ x: 0, y: 0 });
-  };
-
-  // Add function to crop the image based on user adjustments
-  const cropAndProcessImage = () => {
-    if (
-      !previewUrl ||
-      !billboardId ||
-      !containerRef.current ||
-      !imageRef.current
-    ) {
-      console.error("Missing required references for cropping");
-      return;
-    }
-
-    // Create a canvas to perform the cropping
-    const canvas = document.createElement("canvas");
-    const ctx = canvas.getContext("2d");
-    if (!ctx) {
-      console.error("Could not get canvas context");
-      return;
-    }
-
-    try {
-      // Get the dimensions of the container and the crop area
-      const containerRect = containerRef.current.getBoundingClientRect();
-
-      // Calculate the crop area dimensions
-      const cropArea = containerRef.current.querySelector(
-        'div[style*="aspectRatio"]'
-      );
-      if (!cropArea) {
-        console.error("Could not find crop area element");
-        return;
-      }
-      const cropRect = cropArea.getBoundingClientRect();
-
-      // Calculate the scale and position of the image relative to the container
-      const img = new Image();
-
-      img.onload = () => {
-        try {
-          // Set canvas size to match the actual billboard aspect ratio
-          canvas.width = 1024; // Standard width
-          canvas.height = Math.round(1024 / billboardAspectRatio);
-
-          console.log("Canvas dimensions:", canvas.width, "x", canvas.height);
-          console.log("Billboard aspect ratio:", billboardAspectRatio);
-
-          // Calculate visible image dimensions and position
-          const imageScale = zoomLevel;
-          const imageWidth = img.width * imageScale;
-          const imageHeight = img.height * imageScale;
-
-          console.log("Image dimensions:", img.width, "x", img.height);
-          console.log("Image scale:", imageScale);
-          console.log("Scaled image dimensions:", imageWidth, "x", imageHeight);
-
-          // Calculate the image position relative to the crop area
-          const imageCenterX = containerRect.width / 2 + position.x;
-          const imageCenterY = containerRect.height / 2 + position.y;
-
-          const cropCenterX =
-            cropRect.left + cropRect.width / 2 - containerRect.left;
-          const cropCenterY =
-            cropRect.top + cropRect.height / 2 - containerRect.top;
-
-          console.log("Container rect:", containerRect);
-          console.log("Crop rect:", cropRect);
-          console.log("Image position:", position);
-          console.log("Image center:", imageCenterX, imageCenterY);
-          console.log("Crop center:", cropCenterX, cropCenterY);
-
-          // Calculate the top-left corner of the image section that should be drawn
-          const sourceX =
-            (cropCenterX - imageCenterX) / imageScale + img.width / 2;
-          const sourceY =
-            (cropCenterY - imageCenterY) / imageScale + img.height / 2;
-
-          // Calculate the width and height of the image section to draw
-          const sourceWidth = cropRect.width / imageScale;
-          const sourceHeight = cropRect.height / imageScale;
-
-          console.log(
-            "Source coordinates:",
-            sourceX,
-            sourceY,
-            sourceWidth,
-            sourceHeight
-          );
-
-          // Ensure we don't try to draw outside the source image
-          const safeSourceX = Math.max(0, sourceX - sourceWidth / 2);
-          const safeSourceY = Math.max(0, sourceY - sourceHeight / 2);
-          const safeSourceWidth = Math.min(
-            img.width - safeSourceX,
-            sourceWidth
-          );
-          const safeSourceHeight = Math.min(
-            img.height - safeSourceY,
-            sourceHeight
-          );
-
-          console.log(
-            "Safe source coordinates:",
-            safeSourceX,
-            safeSourceY,
-            safeSourceWidth,
-            safeSourceHeight
-          );
-
-          // Draw the cropped image to the canvas
-          ctx.fillStyle = "#000000";
-          ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-          // Draw the image to the canvas, cropping to the selected area
-          ctx.drawImage(
-            img,
-            safeSourceX,
-            safeSourceY,
-            safeSourceWidth,
-            safeSourceHeight,
-            0,
-            0,
-            canvas.width,
-            canvas.height
-          );
-
-          // Convert the canvas to a data URL
-          const croppedImageUrl = canvas.toDataURL("image/png");
-
-          // Send the cropped image to the parent component
-          if (onImageUploaded && billboardId) {
-            onImageUploaded(billboardId, croppedImageUrl);
-
-            // Show success message
-            setIsSuccess(true);
-
-            // Reset and close after a delay
-            setTimeout(() => {
-              if (enableCanvasFocus) {
-                enableCanvasFocus();
-              }
-              setIsSuccess(false);
-              onClose();
-            }, 1500);
-          }
-        } catch (err) {
-          console.error("Error during image cropping:", err);
-          alert("Failed to process the image. Please try again.");
-        }
-      };
-
-      img.onerror = (err) => {
-        console.error("Error loading image for cropping:", err);
-        alert("Failed to load the image for processing. Please try again.");
-      };
-
-      // Load the image to process it
-      img.src = previewUrl;
-    } catch (err) {
-      console.error("Error during crop preparation:", err);
-      alert(
-        "An error occurred while preparing to crop the image. Please try again."
-      );
-    }
-  };
-
-  // Replace the handleSaveAdjustedImage function with this:
-  const handleSaveAdjustedImage = () => {
-    cropAndProcessImage();
+    setZoom(1);
+    setCrop({ x: 0, y: 0 });
   };
 
   return (
@@ -612,92 +444,36 @@ export default function FileUpload({
                 </h2>
               </div>
 
-              <div
-                ref={containerRef}
-                className="relative overflow-hidden h-[400px]"
-                onMouseMove={handleImageMouseMove}
-                onMouseUp={handleImageMouseUp}
-                onMouseLeave={handleImageMouseUp}
-                onWheel={handleWheel}
-                onTouchStart={handleTouchStart}
-                onTouchMove={handleTouchMove}
-                onTouchEnd={handleTouchEnd}
-              >
+              <div className="relative h-[400px] bg-black">
                 {previewUrl && (
-                  <div
-                    ref={imageRef}
-                    className="absolute inset-0 cursor-grab active:cursor-grabbing"
-                    onMouseDown={handleImageMouseDown}
-                    style={{
-                      transform: `translate(${position.x}px, ${position.y}px) scale(${zoomLevel})`,
-                      transformOrigin: "center",
-                      transition: isDraggingImage
-                        ? "none"
-                        : "transform 0.2s ease-out",
-                    }}
-                  >
-                    <img
-                      src={previewUrl}
-                      alt="Preview"
-                      className="w-full h-full object-cover"
-                      draggable="false"
-                    />
-                  </div>
+                  <Cropper
+                    image={previewUrl}
+                    crop={crop}
+                    zoom={zoom}
+                    aspect={billboardAspectRatio}
+                    onCropChange={setCrop}
+                    onZoomChange={setZoom}
+                    onCropComplete={onCropComplete}
+                  />
                 )}
-
-                {/* Overlay with cutout for the crop area */}
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                  <div className="absolute inset-0 bg-black bg-opacity-50"></div>
-
-                  {/* Billboard dimensions display */}
-                  <div className="absolute top-2 left-0 right-0 text-center text-white text-xs font-mono">
-                    Billboard dimensions: {billboardDimensions.width} ×{" "}
-                    {billboardDimensions.height} units
-                  </div>
-
-                  <div
-                    className="w-4/5 relative"
-                    style={{
-                      aspectRatio: billboardAspectRatio,
-                      maxHeight: "80%",
-                      maxWidth: "80%",
-                    }}
-                  >
-                    {/* Transparent cutout */}
-                    <div className="absolute inset-0 border-2 border-white rounded-lg">
-                      {/* Grid overlay to help with positioning */}
-                      <div className="absolute inset-0 grid grid-cols-3 grid-rows-3 opacity-30">
-                        {Array.from({ length: 9 }).map((_, i) => (
-                          <div key={i} className="border border-white/20" />
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Create a mask effect by using a box-shadow that extends beyond the container */}
-                    <div className="absolute inset-0 shadow-[0_0_0_1000px_rgba(0,0,0,0.5)] rounded-lg"></div>
-
-                    {/* Add label for visual clarity */}
-                    <div className="absolute bottom-2 left-0 right-0 text-center">
-                      <span className="bg-black/60 text-white text-xs px-2 py-1 rounded">
-                        Adjust image position and zoom to fit
-                      </span>
-                    </div>
-                  </div>
-                </div>
               </div>
 
               <div className="p-4 space-y-4">
-                <div className="flex items-center justify-center">
-                  <span className="text-sm text-zinc-400 mr-2">Zoom:</span>
-                  <Slider
-                    defaultValue={[1]}
-                    min={0.5}
-                    max={3}
-                    step={0.01}
-                    value={[zoomLevel]}
-                    onValueChange={handleZoomChange}
-                    className="w-full max-w-xs"
-                  />
+                <div className="flex flex-col space-y-4">
+                  <div className="flex items-center">
+                    <span className="text-sm text-zinc-400 mr-3 w-16">
+                      Zoom:
+                    </span>
+                    <Slider
+                      defaultValue={[1]}
+                      min={1}
+                      max={3}
+                      step={0.01}
+                      value={[zoom]}
+                      onValueChange={(value) => setZoom(value[0])}
+                      className="flex-1"
+                    />
+                  </div>
                 </div>
 
                 <AnimatePresence>
@@ -749,9 +525,10 @@ export default function FileUpload({
                   <Button
                     variant="default"
                     className="bg-blue-600 hover:bg-blue-700 text-white"
-                    onClick={handleSaveAdjustedImage}
+                    onClick={handleApplyImage}
+                    disabled={isUploading}
                   >
-                    Apply to Billboard
+                    {isUploading ? "Processing..." : "Apply to Billboard"}
                   </Button>
                 </div>
               </div>
