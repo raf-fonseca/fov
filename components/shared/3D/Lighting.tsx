@@ -1,46 +1,76 @@
 "use client";
 
-import { Environment, Sky, Stars } from "@react-three/drei";
+import { Environment, OrthographicCamera, Sky } from "@react-three/drei";
+import { useRef } from "react";
+import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 
 const Lighting = () => {
+  const shadowCameraRef = useRef<THREE.OrthographicCamera>(null);
+  const lightRef = useRef<THREE.DirectionalLight>(null);
+
   return (
     <>
-      {/* Enhanced lighting */}
-      <ambientLight intensity={0.6} />
-      <directionalLight
-        position={[10, 10, 5]}
-        intensity={1.5}
-        castShadow
-        shadow-mapSize={1024}
-      />
-      <directionalLight
-        position={[-10, 10, -5]}
-        intensity={0.8}
-        color="#8fb5ff"
-      />
-      <hemisphereLight
-        args={["#88bbff", "#444422", 0.7]}
-        position={[0, 50, 0]}
-      />
-
-      {/* Bright blue sky */}
+      {/* Subtle blue sky */}
       <Sky
         distance={450000}
-        sunPosition={[0, 1, 0]}
-        inclination={0.6}
+        sunPosition={[-500, 500, -300]}
+        inclination={0.5}
         azimuth={0.25}
-        mieCoefficient={0.01}
-        mieDirectionalG={0.8}
-        rayleigh={0.5}
-        turbidity={8}
+        mieCoefficient={0.05}
+        mieDirectionalG={0.6}
+        rayleigh={0.8}
+        turbidity={10}
       />
-
-      {/* Optional stars for added effect */}
-      <Stars radius={100} depth={50} count={1000} factor={4} fade />
 
       {/* Environment map for realistic reflections */}
       <Environment preset="sunset" background={false} />
+
+      {/* Main directional light with good shadows */}
+      <directionalLight
+        ref={lightRef}
+        intensity={0.4}
+        castShadow
+        position={[-100, 100, -50]}
+        shadow-mapSize-width={2048}
+        shadow-mapSize-height={2048}
+        shadow-camera-near={10}
+        shadow-camera-far={1000}
+        shadow-bias={-0.0005}
+        shadow-normalBias={0.04}
+        color="#FFF8E7"
+      >
+        <OrthographicCamera
+          ref={shadowCameraRef}
+          left={-200}
+          right={200}
+          top={200}
+          bottom={-200}
+          attach="shadow-camera"
+          near={10}
+          far={1000}
+        />
+      </directionalLight>
+
+      {/* Fill light for softer shadows */}
+      <directionalLight
+        intensity={0.2}
+        position={[30, 20, 10]}
+        color="#E6F0FF"
+      />
+
+      {/* Ambient light for overall scene brightness - low for better shadows */}
+      <ambientLight intensity={0.15} color="#FFFFFF" />
+
+      {/* Additional hemisphere light - subtle color temperature balance */}
+      <hemisphereLight color="#87CEEB" groundColor="#8A7F80" intensity={0.25} />
+
+      {/* Adjust environment intensity through a scene intensity multiplier */}
+      <directionalLight
+        intensity={0.3}
+        position={[100, 50, -100]}
+        color="#FFFAF0"
+      />
     </>
   );
 };
