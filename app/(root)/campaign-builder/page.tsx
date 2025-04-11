@@ -20,8 +20,8 @@ import {
 interface AdSlot {
   id: string;
   name: string;
-  impressions: [number, number]; // [min, max] in millions
-  imageUrl?: string; // Optional image URL
+  impressions: number; // Single value instead of range
+  imageUrl?: string;
 }
 
 interface Game {
@@ -31,7 +31,6 @@ interface Game {
 }
 
 export default function CampaignBuilder() {
-  // This would come from your external source
   const [games, setGames] = useState<Game[]>([
     {
       id: "crazy-rvb",
@@ -39,72 +38,29 @@ export default function CampaignBuilder() {
       adSlots: [
         {
           id: "slot1",
-          name: "Wall Banner",
-          impressions: [1, 2],
-          imageUrl: "/p2.svg",
+          name: "South Billboard",
+          impressions: 1.5,
+          imageUrl: "/billboard1.png",
         },
         {
           id: "slot2",
-          name: "Loading Screen",
-          impressions: [0.5, 1.5],
-          imageUrl: "/p2.svg",
+          name: "Center Billboard",
+          impressions: 1.0,
+          imageUrl: "/billboard2.png",
         },
         {
           id: "slot3",
-          name: "Menu Banner",
-          impressions: [2, 4],
-          imageUrl: "/p2.svg",
-        },
-      ],
-    },
-    {
-      id: "brain-rot",
-      name: "Brain Rot",
-      adSlots: [
-        {
-          id: "slot4",
-          name: "Main Menu",
-          impressions: [1, 3],
-          imageUrl: "/p2.svg",
-        },
-        {
-          id: "slot5",
-          name: "Leaderboard",
-          impressions: [2, 5],
-          imageUrl: "/p2.svg",
-        },
-      ],
-    },
-    {
-      id: "dragon",
-      name: "Dragon",
-      adSlots: [
-        {
-          id: "slot6",
-          name: "Loading Banner",
-          impressions: [3, 6],
-          imageUrl: "/p2.svg",
-        },
-        {
-          id: "slot7",
-          name: "In-Game Billboard",
-          impressions: [1, 2],
-          imageUrl: "/p2.svg",
-        },
-        {
-          id: "slot8",
-          name: "Pause Menu",
-          impressions: [2, 4],
-          imageUrl: "/p2.svg",
+          name: "North Billboard",
+          impressions: 2.0,
+          imageUrl: "/billboard3.png",
         },
       ],
     },
   ]);
 
-  const [impressionRanges, setImpressionRanges] = useState<
-    Record<string, [number, number]>
+  const [impressionValues, setImpressionValues] = useState<
+    Record<string, number>
   >({});
-
   const [totalImpressions, setTotalImpressions] = useState<number>(0);
   const [minimumGuaranteed, setMinimumGuaranteed] = useState<number>(0);
   const [inputError, setInputError] = useState<string>("");
@@ -114,10 +70,8 @@ export default function CampaignBuilder() {
   // Dialog-specific state
   const [dialogOpen, setDialogOpen] = useState<boolean>(false);
   const [activeSlotId, setActiveSlotId] = useState<string | null>(null);
-  const [originalValues, setOriginalValues] = useState<[number, number]>([
-    0, 0,
-  ]);
-  const [newValues, setNewValues] = useState<[number, number]>([0, 0]);
+  const [originalValue, setOriginalValue] = useState<number>(0);
+  const [newValue, setNewValue] = useState<number>(0);
   const [isDragging, setIsDragging] = useState<boolean>(false);
 
   // Calculate minimum guaranteed impressions based on selected slots
@@ -126,13 +80,13 @@ export default function CampaignBuilder() {
       return (
         sum +
         game.adSlots.reduce((gameSum, slot) => {
-          const range = impressionRanges[slot.id] || slot.impressions;
-          return gameSum + range[0];
+          const value = impressionValues[slot.id] || slot.impressions;
+          return gameSum + value;
         }, 0)
       );
     }, 0);
     setMinimumGuaranteed(totalMin);
-  }, [games, impressionRanges]);
+  }, [games, impressionValues]);
 
   // Distribute impressions when confirmed
   const distributeImpressions = (total: number) => {
@@ -142,30 +96,22 @@ export default function CampaignBuilder() {
 
     if (slotCount === 0) return;
 
-    // Calculate approximate even distribution
-    const baseImpressionsPerSlot = total / slotCount;
+    // Calculate even distribution
+    const impressionsPerSlot = total / slotCount;
 
-    // Create wider variance (±20% range)
-    const variance = baseImpressionsPerSlot * 0.2; // 20% variance in each direction for a wider range
-
-    // Create new impression ranges
-    const newRanges: Record<string, [number, number]> = {};
+    // Create new impression values
+    const newValues: Record<string, number> = {};
 
     allSlots.forEach((slot) => {
-      // Create a range around the base value with some variance
-      const minValue = Math.max(0, baseImpressionsPerSlot - variance);
-      const maxValue = baseImpressionsPerSlot + variance;
-
-      // Store the new range
-      newRanges[slot.id] = [minValue, maxValue];
+      newValues[slot.id] = impressionsPerSlot;
     });
 
-    // Update the impression ranges
-    setImpressionRanges(newRanges);
+    // Update the impression values
+    setImpressionValues(newValues);
   };
 
-  const updateSlotImpressions = (slotId: string, value: [number, number]) => {
-    setImpressionRanges((prev) => ({
+  const updateSlotImpressions = (slotId: string, value: number) => {
+    setImpressionValues((prev) => ({
       ...prev,
       [slotId]: value,
     }));
@@ -174,12 +120,10 @@ export default function CampaignBuilder() {
   const handleTotalImpressionsChange = (
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
-    // Remove commas to get the actual numeric value
     const rawValue = e.target.value.replace(/,/g, "");
-    setTempTotalImpressions(rawValue);
 
-    // Validation happens during input as well
     if (rawValue === "") {
+      setTempTotalImpressions("");
       setInputError("");
       return;
     }
@@ -187,13 +131,10 @@ export default function CampaignBuilder() {
     const numValue = parseFloat(rawValue);
 
     if (isNaN(numValue)) {
-      setInputError("Please enter a valid number");
-    } else if (numValue < 1.0) {
-      // This validates any number from 0 to 0.999999
-      setInputError(
-        "Ad slots combined generate a minimum of 1 million impressions per day"
-      );
+      setTempTotalImpressions(rawValue);
+      setInputError("");
     } else {
+      setTempTotalImpressions(formatNumberWithCommas(numValue));
       setInputError("");
     }
   };
@@ -204,27 +145,23 @@ export default function CampaignBuilder() {
       return;
     }
 
-    const numValue = parseFloat(tempTotalImpressions);
+    const numValue = parseFloat(tempTotalImpressions.replace(/,/g, ""));
 
     if (isNaN(numValue)) {
       setInputError("Please enter a valid number");
       return;
     }
 
-    if (numValue < 1.0) {
-      // This validates any number from 0 to 0.999999
+    if (numValue < 1000000) {
       setInputError(
-        "Ad slots combined generate a minimum of 1 million impressions per day"
+        "Ad slots combined generate a minimum of 1 million impressions per day. Please increase the total impressions."
       );
       return;
     }
 
-    // Set total impressions
     setTotalImpressions(numValue);
     setInputError("");
     setIsConfirmed(true);
-
-    // Distribute impressions across all ad slots (pass value in millions)
     distributeImpressions(numValue);
   };
 
@@ -248,21 +185,18 @@ export default function CampaignBuilder() {
   };
 
   // Slider interaction handlers
-  const handleSliderChange = (slotId: string, value: [number, number]) => {
+  const handleSliderChange = (slotId: string, value: number) => {
     if (!isDragging) {
       setIsDragging(true);
       setActiveSlotId(slotId);
-
-      // Store original value first
-      const originalValue = impressionRanges[slotId] ||
-        games.flatMap((g) => g.adSlots).find((s) => s.id === slotId)
-          ?.impressions || [0, 0];
-
-      setOriginalValues(originalValue);
+      setOriginalValue(
+        impressionValues[slotId] ||
+          games.flatMap((g) => g.adSlots).find((s) => s.id === slotId)
+            ?.impressions ||
+          0
+      );
     }
-
-    // Only update the newValues for preview, don't change the actual data yet
-    setNewValues(value);
+    setNewValue(value);
   };
 
   const handleSliderChangeEnd = (slotId: string) => {
@@ -275,37 +209,27 @@ export default function CampaignBuilder() {
   // Dialog action handlers
   const applyRedistribute = () => {
     if (activeSlotId) {
-      setImpressionRanges((prev) => ({
+      setImpressionValues((prev) => ({
         ...prev,
-        [activeSlotId]: newValues,
+        [activeSlotId]: newValue,
       }));
     }
     handleDialogClose();
   };
 
   const applyIncreaseTotal = () => {
-    const originalSum = originalValues[0] + originalValues[1];
-    const newSum = newValues[0] + newValues[1];
-    const diff = newSum - originalSum;
-
-    // Update the total impressions with the new value
-    const newTotal = totalImpressions + diff;
+    const diff = newValue - originalValue;
+    const newTotal = Math.round(totalImpressions + diff);
     setTotalImpressions(newTotal);
-
-    // Reset confirmation state to allow editing the input field
     setIsConfirmed(false);
     setTempTotalImpressions(newTotal.toString());
-
-    // Close the dialog
     handleDialogClose();
 
-    // Scroll to the top of the page
     window.scrollTo({
       top: 0,
       behavior: "smooth",
     });
 
-    // Add a small delay and focus on the input field if possible
     setTimeout(() => {
       const inputElement = document.querySelector(
         'input[value="' + newTotal + '"]'
@@ -335,7 +259,6 @@ export default function CampaignBuilder() {
 
     if (abbreviation) {
       const value = num / abbreviation.value;
-      // If the value has decimal places, show one decimal place, otherwise show whole number
       return value % 1 === 0
         ? `${value.toFixed(0)}${abbreviation.symbol}`
         : `${value.toFixed(1)}${abbreviation.symbol}`;
@@ -401,7 +324,7 @@ export default function CampaignBuilder() {
               </div>
             </div>
             <p className="text-sm text-slate-400 mt-2">
-              Set your desired campaign impressions. This will be distrubuted
+              Set your desired campaign impressions. This will be distributed
               across all ad slots.
             </p>
           </CardContent>
@@ -455,21 +378,14 @@ export default function CampaignBuilder() {
                         </div>
                         <div className="space-y-4">
                           <div className="flex justify-between text-sm text-slate-400">
-                            <span>Impression Range</span>
+                            <span>Impressions</span>
                             {isConfirmed ? (
                               <span className="text-white">
                                 {formatNumberWithSuffix(
                                   isDragging && activeSlotId === slot.id
-                                    ? newValues[0]
-                                    : impressionRanges[slot.id]?.[0] ??
-                                        slot.impressions[0]
-                                )}
-                                -
-                                {formatNumberWithSuffix(
-                                  isDragging && activeSlotId === slot.id
-                                    ? newValues[1]
-                                    : impressionRanges[slot.id]?.[1] ??
-                                        slot.impressions[1]
+                                    ? newValue
+                                    : impressionValues[slot.id] ??
+                                        slot.impressions
                                 )}
                               </span>
                             ) : (
@@ -487,7 +403,7 @@ export default function CampaignBuilder() {
                                 }
                               >
                                 <Slider
-                                  value={originalValues}
+                                  value={[originalValue]}
                                   min={0}
                                   max={Math.max(
                                     10,
@@ -496,7 +412,7 @@ export default function CampaignBuilder() {
                                         1)) *
                                       1.5
                                   )}
-                                  step={1}
+                                  step={0.1}
                                   disabled={true}
                                   className="w-full"
                                 />
@@ -506,7 +422,7 @@ export default function CampaignBuilder() {
                               {isDragging && activeSlotId === slot.id && (
                                 <div className="absolute inset-0 z-10">
                                   <Slider
-                                    value={newValues}
+                                    value={[newValue]}
                                     min={0}
                                     max={Math.max(
                                       10,
@@ -515,7 +431,7 @@ export default function CampaignBuilder() {
                                           .length || 1)) *
                                         1.5
                                     )}
-                                    step={1}
+                                    step={0.1}
                                     disabled={true}
                                     className="w-full opacity-70"
                                   />
@@ -531,12 +447,12 @@ export default function CampaignBuilder() {
                                 }
                               >
                                 <Slider
-                                  value={
+                                  value={[
                                     isDragging && activeSlotId === slot.id
-                                      ? newValues
-                                      : impressionRanges[slot.id] ||
-                                        slot.impressions
-                                  }
+                                      ? newValue
+                                      : impressionValues[slot.id] ??
+                                        slot.impressions,
+                                  ]}
                                   min={0}
                                   max={Math.max(
                                     10,
@@ -545,12 +461,9 @@ export default function CampaignBuilder() {
                                         1)) *
                                       1.5
                                   )}
-                                  step={1}
+                                  step={0.1}
                                   onValueChange={(value) =>
-                                    handleSliderChange(
-                                      slot.id,
-                                      value as [number, number]
-                                    )
+                                    handleSliderChange(slot.id, value[0])
                                   }
                                   onValueCommit={() =>
                                     handleSliderChangeEnd(slot.id)

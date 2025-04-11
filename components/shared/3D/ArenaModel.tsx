@@ -8,7 +8,7 @@ import * as THREE from "three";
 import Lighting from "./Lighting";
 import AdSlots, { billboardData } from "./AdSlots";
 import FileUpload from "@/components/shared/FileUpload";
-import FlyControls from "./Controller";
+import FlyControls, { Crosshair } from "./Controller";
 
 const Model = () => {
   const { scene } = useGLTF("/main.glb");
@@ -312,66 +312,7 @@ const ArenaModel: React.FC<ArenaModelProps> = ({
       style={{ width: "100%", height: "100%", position: "relative" }}
       ref={canvasContainerRef}
     >
-      {/* Crosshair overlay positioned relative to Canvas */}
-      <div
-        style={{
-          position: "absolute",
-          top: "50%",
-          left: "50%",
-          transform: "translate(-50%, -50%)",
-          zIndex: 10,
-          pointerEvents: "none",
-        }}
-      >
-        <div
-          style={{
-            width: "16px",
-            height: "16px",
-            position: "relative",
-          }}
-        >
-          {/* Horizontal line */}
-          <div
-            style={{
-              position: "absolute",
-              top: "50%",
-              left: 0,
-              width: "16px",
-              height: "2px",
-              backgroundColor: "white",
-              transform: "translateY(-50%)",
-              opacity: 0.7,
-            }}
-          />
-          {/* Vertical line */}
-          <div
-            style={{
-              position: "absolute",
-              top: 0,
-              left: "50%",
-              width: "2px",
-              height: "16px",
-              backgroundColor: "white",
-              transform: "translateX(-50%)",
-              opacity: 0.7,
-            }}
-          />
-          {/* Center dot */}
-          <div
-            style={{
-              position: "absolute",
-              top: "50%",
-              left: "50%",
-              width: "4px",
-              height: "4px",
-              backgroundColor: "white",
-              borderRadius: "50%",
-              transform: "translate(-50%, -50%)",
-              opacity: 0.9,
-            }}
-          />
-        </div>
-      </div>
+      <Crosshair />
 
       <Canvas
         camera={{ position: [0, 0, 10], fov: 75 }}
