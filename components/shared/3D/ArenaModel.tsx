@@ -138,6 +138,21 @@ const ArenaModel: React.FC<ArenaModelProps> = ({
     Record<number, string>
   >({});
 
+  // Get selected billboard dimensions for the upload popup
+  const getSelectedBillboardDimensions = useCallback((id: number | null) => {
+    if (!id) return { width: 3, height: 2 }; // Default dimensions
+
+    const billboard = billboardData.find((b) => b.id === id);
+    if (billboard) {
+      return {
+        width: billboard.size[0],
+        height: billboard.size[1],
+      };
+    }
+
+    return { width: 3, height: 2 }; // Default dimensions
+  }, []);
+
   // Move camera to position in front of billboard
   const moveCameraToBillboard = useCallback((id: number) => {
     const billboard = billboardData.find((b) => b.id === id);
@@ -374,6 +389,9 @@ const ArenaModel: React.FC<ArenaModelProps> = ({
           onImageUploaded={handleImageUploaded}
           disableCanvasFocus={disableCanvasFocus}
           enableCanvasFocus={enableCanvasFocus}
+          billboardDimensions={getSelectedBillboardDimensions(
+            selectedBillboardId
+          )}
         />
       )}
 

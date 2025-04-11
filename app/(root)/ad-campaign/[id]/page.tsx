@@ -127,7 +127,7 @@ const Page = () => {
               style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
             >
               {/* Map through all available billboards */}
-              {Array.from({ length: 9 }).map((_, index) => (
+              {Array.from({ length: 3 }).map((_, index) => (
                 <div
                   key={index}
                   onClick={(e) => {

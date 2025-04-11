@@ -29,7 +29,7 @@ export const billboardData: {
   {
     id: 1,
     position: [0, 34, -47.8],
-    rotation: [Math.PI * 2, Math.PI * 2, 0],
+    rotation: [0, 0, 0],
     size: [20, 8],
     borderDepth: 0.5,
     name: "Main Entrance Billboard",
@@ -44,60 +44,60 @@ export const billboardData: {
   },
   {
     id: 3,
-    position: [30, 0, 30],
-    rotation: [Math.PI * 2, Math.PI, 0],
-    size: [8, 5],
-    borderDepth: 0.7,
-    name: "Southern Plaza",
-  },
-  {
-    id: 4,
-    position: [60, -5, -20],
-    rotation: [Math.PI * 2, Math.PI / 2, 0],
-    size: [4, 3],
-    borderDepth: 0.4,
-    name: "East Corner",
-  },
-  {
-    id: 5,
-    position: [-50, 10, -40],
-    rotation: [Math.PI * 2, Math.PI * 1.25, 0],
-    size: [7, 4],
-    borderDepth: 0.6,
-    name: "Northwest Tower",
-  },
-  {
-    id: 6,
-    position: [20, -8, 60],
-    rotation: [Math.PI * 2, Math.PI * 0.75, 0],
-    size: [5, 3],
+    position: [0, 34, 43],
+    rotation: [0, Math.PI, 0],
+    size: [20, 8],
     borderDepth: 0.5,
-    name: "South Pavilion",
+    name: "South Entrance",
   },
-  {
-    id: 7,
-    position: [-30, 25, 10],
-    rotation: [Math.PI * 2, -Math.PI / 3, Math.PI / 20],
-    size: [6, 4],
-    borderDepth: 0.55,
-    name: "North Balcony",
-  },
-  {
-    id: 8,
-    position: [45, 15, 45],
-    rotation: [Math.PI * 2, Math.PI * 1.75, 0],
-    size: [5, 3],
-    borderDepth: 0.45,
-    name: "Southeast Tower",
-  },
-  {
-    id: 9,
-    position: [-40, 5, 20],
-    rotation: [Math.PI * 2, -Math.PI / 6, 0],
-    size: [6, 4],
-    borderDepth: 0.6,
-    name: "West Entrance",
-  },
+  //   {
+  //     id: 4,
+  //     position: [60, -5, -20],
+  //     rotation: [Math.PI * 2, Math.PI / 2, 0],
+  //     size: [4, 3],
+  //     borderDepth: 0.4,
+  //     name: "East Corner",
+  //   },
+  //   {
+  //     id: 5,
+  //     position: [-50, 10, -40],
+  //     rotation: [Math.PI * 2, Math.PI * 1.25, 0],
+  //     size: [7, 4],
+  //     borderDepth: 0.6,
+  //     name: "Northwest Tower",
+  //   },
+  //   {
+  //     id: 6,
+  //     position: [20, -8, 60],
+  //     rotation: [Math.PI * 2, Math.PI * 0.75, 0],
+  //     size: [5, 3],
+  //     borderDepth: 0.5,
+  //     name: "South Pavilion",
+  //   },
+  //   {
+  //     id: 7,
+  //     position: [-30, 25, 10],
+  //     rotation: [Math.PI * 2, -Math.PI / 3, Math.PI / 20],
+  //     size: [6, 4],
+  //     borderDepth: 0.55,
+  //     name: "North Balcony",
+  //   },
+  //   {
+  //     id: 8,
+  //     position: [45, 15, 45],
+  //     rotation: [Math.PI * 2, Math.PI * 1.75, 0],
+  //     size: [5, 3],
+  //     borderDepth: 0.45,
+  //     name: "Southeast Tower",
+  //   },
+  //   {
+  //     id: 9,
+  //     position: [-40, 5, 20],
+  //     rotation: [Math.PI * 2, -Math.PI / 6, 0],
+  //     size: [6, 4],
+  //     borderDepth: 0.6,
+  //     name: "West Entrance",
+  //   },
 ];
 
 // Billboard component with a 3D frame and a plane for content
@@ -129,18 +129,44 @@ const Billboard: React.FC<BillboardProps> = ({
         loadedTex.wrapT = THREE.ClampToEdgeWrapping;
         loadedTex.minFilter = THREE.LinearFilter;
 
-        setLoadedTexture(loadedTex);
+        // Get image dimensions
+        const imageWidth = loadedTex.image.width;
+        const imageHeight = loadedTex.image.height;
+        const imageAspect = imageWidth / imageHeight;
+        const planeAspect = size[0] / size[1];
 
+        // Apply texture to material with proper settings
         if (contentRef.current) {
-          // Update the material with the new texture
-          const material = contentRef.current
-            .material as THREE.MeshStandardMaterial;
-          material.map = loadedTex;
-          material.needsUpdate = true;
+          // Create a new MeshBasicMaterial that doesn't respond to lighting
+          const material = new THREE.MeshBasicMaterial({
+            color: 0xffffff,
+            map: loadedTex,
+            side: THREE.DoubleSide,
+          });
+
+          // Set texture repeat and offset based on aspect ratio
+          if (material.map) {
+            if (imageAspect > planeAspect) {
+              // Image is wider than plane - center horizontally
+              const scale = planeAspect / imageAspect;
+              material.map.repeat.set(1, scale);
+              material.map.offset.set(0, (1 - scale) / 2);
+            } else {
+              // Image is taller than plane - center vertically
+              const scale = imageAspect / planeAspect;
+              material.map.repeat.set(scale, 1);
+              material.map.offset.set((1 - scale) / 2, 0);
+            }
+          }
+
+          // Replace the material
+          contentRef.current.material = material;
         }
+
+        setLoadedTexture(loadedTex);
       });
     }
-  }, [texture, textureLoader]);
+  }, [texture, textureLoader, size]);
 
   const handleClick = (e: ThreeEvent<MouseEvent>) => {
     e.stopPropagation();
@@ -179,18 +205,20 @@ const Billboard: React.FC<BillboardProps> = ({
       <mesh
         ref={contentRef}
         position={contentPosition}
-        castShadow
-        receiveShadow
         onClick={handleClick}
         onPointerOver={() => setHovered(true)}
         onPointerOut={() => setHovered(false)}
       >
         <planeGeometry args={[size[0], size[1]]} />
-        <meshStandardMaterial
-          color={materialColor}
-          map={loadedTexture}
-          side={THREE.DoubleSide}
-        />
+        {!texture ? (
+          <meshBasicMaterial color={materialColor} side={THREE.DoubleSide} />
+        ) : (
+          <meshBasicMaterial
+            color={materialColor}
+            map={loadedTexture}
+            side={THREE.DoubleSide}
+          />
+        )}
       </mesh>
 
       {/* Front face text - only show if no texture */}
