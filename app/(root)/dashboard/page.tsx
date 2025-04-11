@@ -598,10 +598,12 @@ export default function Dashboard() {
                           </div>
                         </div>
                       </CardContent>
-                      <div className="p-3 pt-0">
-                        <Button variant="outline" className="w-full">
-                          Upload Media
-                        </Button>
+                      <div className="bg-slate-950 border-t border-slate-800 pt-2 rounded-b-[13px]">
+                        <div className="p-2 pt-0">
+                          <Button variant="outline" className="w-full">
+                            Upload Media
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   </Card>
@@ -1043,8 +1045,8 @@ export default function Dashboard() {
       <div className="container mx-auto pb-4 px-10">
         <div className="grid grid-cols-6 gap-4">
           {/* Previous Campaigns */}
-          <Card className="col-span-2 overflow-hidden border-slate-800 bg-slate-950 py-0 pb-4">
-            <div className="flex flex-col h-[300px]">
+          <Card className="col-span-2 overflow-hidden border-slate-800 bg-slate-950 py-0 ">
+            <div className="flex flex-col h-[320px]">
               <CardHeader className="p-3 pb-0">
                 <CardTitle className="text-lg">Previous Campaigns</CardTitle>
                 <CardDescription>All previous campaigns</CardDescription>
@@ -1091,22 +1093,24 @@ export default function Dashboard() {
                   ))}
                 </div>
               </CardContent>
-              <CardFooter className="p-3 pt-0 mt-auto border-t border-slate-800">
-                <Button variant="outline" size="sm" className="w-full" asChild>
-                  <Link href="/dashboard/campaigns">View All Campaigns</Link>
-                </Button>
-              </CardFooter>
+              <div className="bg-slate-950 border-t border-slate-800 pt-2 rounded-b-[13px] w-">
+                <div className="p-2 pt-0">
+                  <Button variant="outline" className="w-full" asChild>
+                    <Link href="/dashboard/campaigns">View All Campaigns</Link>
+                  </Button>
+                </div>
+              </div>
             </div>
           </Card>
 
           {/* Previous Ads */}
           <Card className="col-span-2 border-slate-800 bg-slate-950 py-0">
-            <div className="flex flex-col h-[300px]">
+            <div className="flex flex-col h-[320px]">
               <CardHeader className="p-3 pb-0">
                 <CardTitle className="text-lg">Previous Ads</CardTitle>
                 <CardDescription>Recent ads from all campaigns</CardDescription>
               </CardHeader>
-              <CardContent className="p-3 flex-1 overflow-auto">
+              <CardContent className="p-1 flex-1 overflow-auto">
                 <div className="space-y-2">
                   {ads.map((ad) => (
                     <Link href={`/dashboard/ads`} key={ad.id} className="block">
@@ -1128,11 +1132,13 @@ export default function Dashboard() {
                   ))}
                 </div>
               </CardContent>
-              <CardFooter className="p-3 pt-0 mt-auto border-t border-slate-800">
-                <Button variant="outline" size="sm" className="w-full" asChild>
-                  <Link href="/dashboard/ads">View All Ads</Link>
-                </Button>
-              </CardFooter>
+              <div className="bg-slate-950 border-t border-slate-800 pt-2 rounded-b-[13px]">
+                <div className="p-2 pt-0">
+                  <Button variant="outline" className="w-full" asChild>
+                    <Link href="/dashboard/ads">View All Ads</Link>
+                  </Button>
+                </div>
+              </div>
             </div>
           </Card>
 
