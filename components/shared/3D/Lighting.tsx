@@ -1,8 +1,7 @@
 "use client";
 
-import { Environment, OrthographicCamera, Sky } from "@react-three/drei";
+import { Environment, OrthographicCamera, Sphere } from "@react-three/drei";
 import { useRef } from "react";
-import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 
 const Lighting = () => {
@@ -11,27 +10,15 @@ const Lighting = () => {
 
   return (
     <>
-      {/* Subtle blue sky */}
-      <Sky
-        distance={450000}
-        sunPosition={[-500, 500, -300]}
-        inclination={0.5}
-        azimuth={0.25}
-        mieCoefficient={0.05}
-        mieDirectionalG={0.6}
-        rayleigh={0.8}
-        turbidity={10}
-      />
+      {/* Sky environment */}
+      <Environment preset="sunset" />
 
-      {/* Environment map for realistic reflections */}
-      <Environment preset="sunset" background={false} />
-
-      {/* Main directional light with good shadows */}
+      {/* Main directional light (sun light) */}
       <directionalLight
         ref={lightRef}
-        intensity={0.4}
+        intensity={2.5}
         castShadow
-        position={[-100, 100, -50]}
+        position={[-30, 120, -50]}
         shadow-mapSize-width={2048}
         shadow-mapSize-height={2048}
         shadow-camera-near={10}
@@ -41,12 +28,12 @@ const Lighting = () => {
         color="#FFF8E7"
       >
         <OrthographicCamera
-          ref={shadowCameraRef}
           left={-200}
           right={200}
           top={200}
           bottom={-200}
-          attach="shadow-camera"
+          ref={shadowCameraRef}
+          attach={"shadow-camera"}
           near={10}
           far={1000}
         />
@@ -54,23 +41,13 @@ const Lighting = () => {
 
       {/* Fill light for softer shadows */}
       <directionalLight
-        intensity={0.2}
+        intensity={0.8}
         position={[30, 20, 10]}
         color="#E6F0FF"
       />
 
-      {/* Ambient light for overall scene brightness - low for better shadows */}
-      <ambientLight intensity={0.15} color="#FFFFFF" />
-
-      {/* Additional hemisphere light - subtle color temperature balance */}
-      <hemisphereLight color="#87CEEB" groundColor="#8A7F80" intensity={0.25} />
-
-      {/* Adjust environment intensity through a scene intensity multiplier */}
-      <directionalLight
-        intensity={0.3}
-        position={[100, 50, -100]}
-        color="#FFFAF0"
-      />
+      {/* Ambient light for overall scene brightness */}
+      <ambientLight intensity={0.7} color="#FFFFFF" />
     </>
   );
 };

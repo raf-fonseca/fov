@@ -11,8 +11,31 @@ import FileUpload from "@/components/shared/FileUpload";
 
 const Model = () => {
   const { scene } = useGLTF("/main.glb");
+  const group = useRef<THREE.Group>(null);
 
-  return <primitive object={scene} scale={1} position={[0, -25, 0]} />;
+  useEffect(() => {
+    scene.traverse((child) => {
+      if (child instanceof THREE.Mesh) {
+        // Replace all materials with MeshLambertMaterial
+        const originalMaterial = child.material;
+        const lambertMaterial = new THREE.MeshLambertMaterial({
+          map: originalMaterial.map,
+          color: originalMaterial.color,
+          transparent: originalMaterial.transparent,
+          opacity: originalMaterial.opacity,
+          side: originalMaterial.side,
+        });
+
+        child.material = lambertMaterial;
+        child.castShadow = true;
+        child.receiveShadow = true;
+      }
+    });
+  }, [scene]);
+
+  return (
+    <primitive object={scene} scale={1} position={[0, -25, 0]} ref={group} />
+  );
 };
 
 interface CameraControllerProps {
@@ -378,6 +401,7 @@ const ArenaModel: React.FC<ArenaModelProps> = ({
         )}
 
         {/* Import flying controls from separate component */}
+        <color attach="background" args={["#87CEEB"]} />
         <FlyControls canBeFocused={canvasFocusable} />
       </Canvas>
 
