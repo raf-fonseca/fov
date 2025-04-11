@@ -63,7 +63,6 @@ export default function RootLayout({
               },
             },
           }}
-          reverseOrder={true}
         />
       </body>
     </html>

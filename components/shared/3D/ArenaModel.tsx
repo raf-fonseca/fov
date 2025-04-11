@@ -318,6 +318,13 @@ const ArenaModel: React.FC<ArenaModelProps> = ({
         camera={{ position: [0, 0, 10], fov: 75 }}
         shadows
         style={{ touchAction: "none" }} // Ensures touch events don't trigger scrolling
+        // gl={{
+        //   antialias: true,
+        //   toneMapping: THREE.ACESFilmicToneMapping,
+        //   toneMappingExposure: 1.0,
+        //   outputColorSpace: THREE.SRGBColorSpace,
+        //   pixelRatio: window.devicePixelRatio,
+        // }}
       >
         {/* Import lighting from separate component */}
         <Lighting />

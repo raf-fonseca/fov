@@ -247,7 +247,10 @@ export default function CampaignScheduler() {
     // Price increases if fewer days are selected
     const priceMultiplier = daysMultiplier > 1 ? 1.2 : 1;
 
-    return Math.round(basePrice * priceMultiplier);
+    // Add $5,000 for each additional day beyond base duration
+    const additionalDaysCost = (campaign.days - 7) * 5000;
+
+    return Math.round(basePrice * priceMultiplier + additionalDaysCost);
   };
 
   const handleUpdateCampaign = (updates: Partial<Campaign>) => {
@@ -552,31 +555,33 @@ export default function CampaignScheduler() {
 
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Budget</label>
-                  <div className="flex items-center gap-2">
-                    <div className="relative w-full">
-                      <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
-                        $
-                      </span>
-                      <Input
-                        type="text"
-                        value={calculatePrice().toLocaleString()}
-                        onChange={(e) => {
-                          const newBudget = parseInt(
-                            e.target.value.replace(/,/g, "")
-                          );
-                          if (!isNaN(newBudget)) {
-                            const newImpressions = Math.floor(
-                              newBudget / 0.001
-                            );
-                            handleUpdateCampaign({
-                              impressions: newImpressions,
-                            });
-                          }
-                        }}
-                        className="bg-[#0a0c14] border-[#2a2d3a] pl-7"
-                      />
-                    </div>
-                  </div>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="relative w-full">
+                        <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+                          $
+                        </span>
+                        <Input
+                          type="text"
+                          value={calculatePrice().toLocaleString()}
+                          disabled
+                          className="bg-[#0a0c14] border-[#2a2d3a] pl-7 cursor-not-allowed"
+                        />
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent className="bg-[#1a1d2d] border-[#2a2d3a] text-white p-0">
+                      <Link href="/campaign-builder">
+                        <Button
+                          variant="ghost"
+                          className="w-full flex items-center justify-start gap-2 text-white hover:bg-slate-800 hover:text-white py-3"
+                        >
+                          <span>
+                            Adjust the campaign settings to change the budget
+                          </span>
+                        </Button>
+                      </Link>
+                    </TooltipContent>
+                  </Tooltip>
                 </div>
               </div>
             </CardContent>

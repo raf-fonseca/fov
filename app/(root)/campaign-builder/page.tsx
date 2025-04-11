@@ -462,59 +462,9 @@ export default function CampaignBuilder() {
                             )}
                           </div>
                           {isConfirmed ? (
-                            <div className="relative">
-                              {/* Base layer: The original slider that stays in place */}
-                              <div
-                                className={
-                                  isDragging && activeSlotId === slot.id
-                                    ? "block"
-                                    : "hidden"
-                                }
-                              >
-                                <Slider
-                                  value={[originalValue]}
-                                  min={0}
-                                  max={Math.max(
-                                    10,
-                                    (totalImpressions /
-                                      (games.flatMap((g) => g.adSlots).length ||
-                                        1)) *
-                                      1.5
-                                  )}
-                                  step={0.1}
-                                  disabled={true}
-                                  className="w-full"
-                                />
-                              </div>
-
-                              {/* Middle layer: The moving greyed out slider (shown only when dragging) */}
-                              {isDragging && activeSlotId === slot.id && (
-                                <div className="absolute inset-0 z-10">
-                                  <Slider
-                                    value={[newValue]}
-                                    min={0}
-                                    max={Math.max(
-                                      10,
-                                      (totalImpressions /
-                                        (games.flatMap((g) => g.adSlots)
-                                          .length || 1)) *
-                                        1.5
-                                    )}
-                                    step={0.1}
-                                    disabled={true}
-                                    className="w-full opacity-70"
-                                  />
-                                </div>
-                              )}
-
-                              {/* Top layer: The interactive slider (invisible during drag but receives events) */}
-                              <div
-                                className={
-                                  isDragging && activeSlotId === slot.id
-                                    ? "absolute inset-0 z-20"
-                                    : ""
-                                }
-                              >
+                            <div className="relative w-full">
+                              {/* Interactive slider */}
+                              <div className="relative w-full">
                                 <Slider
                                   value={[
                                     isDragging && activeSlotId === slot.id
@@ -536,11 +486,6 @@ export default function CampaignBuilder() {
                                   }
                                   onValueCommit={() =>
                                     handleSliderChangeEnd(slot.id)
-                                  }
-                                  className={
-                                    isDragging && activeSlotId === slot.id
-                                      ? "opacity-0"
-                                      : ""
                                   }
                                 />
                               </div>
