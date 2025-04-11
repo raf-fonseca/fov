@@ -250,7 +250,12 @@ export default function CampaignScheduler() {
     // Add $5,000 for each additional day beyond base duration
     const additionalDaysCost = (campaign.days - 7) * 5000;
 
-    return Math.round(basePrice * priceMultiplier + additionalDaysCost);
+    // Add $100 for each additional region
+    const additionalRegionsCost = (campaign.regions.length - 1) * 100;
+
+    return Math.round(
+      basePrice * priceMultiplier + additionalDaysCost + additionalRegionsCost
+    );
   };
 
   const handleUpdateCampaign = (updates: Partial<Campaign>) => {
@@ -374,276 +379,283 @@ export default function CampaignScheduler() {
   return (
     <TooltipProvider>
       <div className="flex flex-col gap-6 mt-24 px-10 lg:px-20 pb-24">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Campaign Settings Card */}
-          <Card className="bg-[#151825] border-[#2a2d3a]">
-            <CardHeader>
-              <CardTitle className="text-lg">Campaign Settings</CardTitle>
-              <CardDescription>Adjust your campaign parameters</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Regions - Dropdown Menu */}
-              <div className="space-y-3 flex flex-col">
-                <div className="flex items-center justify-between">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger className=" bg-slate-950 border border-slate-800 text-left font-normal rounded-md p-2 flex items-center gap-2 w-40  ">
-                      <span>Target Regions</span>
-                      <ChevronsUpDown className="h-4 w-4 opacity-50 ml-auto" />
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent className="z-50 bg-[#18181A] border-none w-56 mt-2 rounded-sm text-white">
-                      {["US", "EU", "BR", "ASIA", "INTL"].map(
-                        (region, index) => {
-                          const isSelected = campaign.regions.includes(
-                            region as Region
-                          );
-                          return (
-                            <DropdownMenuItem
-                              key={region}
-                              onClick={() => toggleRegion(region as Region)}
-                              className={cn(
-                                "py-2 font-semibold flex items-center",
-                                index === 0 && "pt-4"
-                              )}
-                            >
-                              <div className="flex items-center gap-2">
-                                <div className="w-4 h-4 flex items-center justify-center">
-                                  {isSelected && <Check className="h-3 w-3" />}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Campaign Settings Card - 1/3 width */}
+          <div className="lg:col-span-1">
+            <Card className="bg-[#151825] border-[#2a2d3a] h-full">
+              <CardHeader>
+                <CardTitle className="text-lg">Campaign Settings</CardTitle>
+                <CardDescription>
+                  Adjust your campaign parameters
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Regions - Dropdown Menu */}
+                <div className="space-y-3 flex flex-col">
+                  <div className="flex items-center justify-between">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger className=" bg-slate-950 border border-slate-800 text-left font-normal rounded-md p-2 flex items-center gap-2 w-40  ">
+                        <span>Target Regions</span>
+                        <ChevronsUpDown className="h-4 w-4 opacity-50 ml-auto" />
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent className="z-50 bg-[#18181A] border-none w-56 mt-2 rounded-sm text-white">
+                        {["US", "EU", "BR", "ASIA", "INTL"].map(
+                          (region, index) => {
+                            const isSelected = campaign.regions.includes(
+                              region as Region
+                            );
+                            return (
+                              <DropdownMenuItem
+                                key={region}
+                                onClick={() => toggleRegion(region as Region)}
+                                className={cn(
+                                  "py-2 font-semibold flex items-center",
+                                  index === 0 && "pt-4"
+                                )}
+                              >
+                                <div className="flex items-center gap-2">
+                                  <div className="w-4 h-4 flex items-center justify-center">
+                                    {isSelected && (
+                                      <Check className="h-3 w-3" />
+                                    )}
+                                  </div>
+                                  <span>{region}</span>
                                 </div>
-                                <span>{region}</span>
-                              </div>
-                            </DropdownMenuItem>
-                          );
-                        }
-                      )}
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem
-                        onClick={() =>
-                          handleUpdateCampaign({
-                            regions: ["US", "EU", "BR", "ASIA", "INTL"],
-                          })
-                        }
-                        className="pt-2 pb-2 font-semibold"
-                      >
-                        Select All
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => handleUpdateCampaign({ regions: [] })}
-                        className="pt-2 pb-4 font-semibold"
-                      >
-                        Clear Selection
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                              </DropdownMenuItem>
+                            );
+                          }
+                        )}
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onClick={() =>
+                            handleUpdateCampaign({
+                              regions: ["US", "EU", "BR", "ASIA", "INTL"],
+                            })
+                          }
+                          className="pt-2 pb-2 font-semibold"
+                        >
+                          Select All
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => handleUpdateCampaign({ regions: [] })}
+                          className="pt-2 pb-4 font-semibold"
+                        >
+                          Clear Selection
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
 
-                  {campaign.regions.length > 0 && (
-                    <div className="flex items-center gap-1.5 ml-3">
-                      <div className="flex items-center justify-center bg-green-100 text-green-700 rounded-full p-1 bg-green-300/30">
-                        <ArrowUp
-                          className="h-3 w-3 transform text-green-400"
-                          strokeWidth={3}
-                        />
+                    {campaign.regions.length > 0 && (
+                      <div className="flex items-center gap-1.5 ml-3">
+                        <div className="flex items-center justify-center bg-green-100 text-green-700 rounded-full p-1 bg-green-300/30">
+                          <ArrowUp
+                            className="h-3 w-3 transform text-green-400"
+                            strokeWidth={3}
+                          />
+                        </div>
+                        <span className="text-green-400 font-medium">
+                          +${campaign.regions.length * 100}
+                        </span>
                       </div>
-                      <span className="text-green-400 font-medium">
-                        +${campaign.regions.length * 100}
-                      </span>
+                    )}
+                  </div>
+
+                  {/* Selected Regions Badges */}
+                  {campaign.regions.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {campaign.regions.map((region) => (
+                        <Badge
+                          key={region}
+                          variant="outline"
+                          className="bg-primary-50 text-white flex items-center py-1 px-2 focus:ring-0 focus:ring-offset-0 focus-visible:outline-none"
+                        >
+                          {region}
+                          <button
+                            onClick={() => toggleRegion(region)}
+                            className="ml-1.5 bg-primary-50 rounded-full p-0.5 hover:bg-primary-50/20 p-0 focus:outline-none focus:ring-0"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </Badge>
+                      ))}
                     </div>
                   )}
                 </div>
 
-                {/* Selected Regions Badges */}
-                {campaign.regions.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {campaign.regions.map((region) => (
-                      <Badge
-                        key={region}
-                        variant="outline"
-                        className="bg-primary-50 text-white flex items-center py-1 px-2 focus:ring-0 focus:ring-offset-0 focus-visible:outline-none"
-                      >
-                        {region}
-                        <button
-                          onClick={() => toggleRegion(region)}
-                          className="ml-1.5 bg-primary-50 rounded-full p-0.5 hover:bg-primary-50/20 p-0 focus:outline-none focus:ring-0"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </Badge>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Campaign Duration */}
-              <div className="space-y-3">
-                <label className="text-sm font-medium">
-                  Campaign Duration (Days)
-                </label>
-                <div className="flex items-center gap-4">
-                  <div className="flex-1">
-                    <Slider
-                      value={[campaign.days]}
-                      min={1}
-                      max={30}
-                      step={1}
-                      onValueChange={(value) => {
-                        handleUpdateCampaign({ days: value[0] });
-
-                        // Update end date if start date exists
-                        if (campaign.dateRange.start) {
-                          const newEndDate = addDays(
-                            campaign.dateRange.start,
-                            value[0] - 1
-                          );
-                          setCampaign((prev) => ({
-                            ...prev,
-                            dateRange: {
-                              ...prev.dateRange,
-                              end: newEndDate,
-                            },
-                          }));
-                        }
-                      }}
-                    />
-                  </div>
-                  <span className="text-sm font-medium ">
-                    {campaign.days} days
-                  </span>
-                </div>
-              </div>
-
-              {/* Impressions and Budget */}
-              <div className="grid gap-4">
-                <div className="space-y-2">
+                {/* Campaign Duration */}
+                <div className="space-y-3">
                   <label className="text-sm font-medium">
-                    Target Impressions
+                    Campaign Duration (Days)
                   </label>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div className="relative">
-                        <Input
-                          type="text"
-                          disabled
-                          value={campaign.impressions.toLocaleString()}
-                          onChange={(e) => {
-                            const newImpressions = parseInt(
-                              e.target.value.replace(/,/g, "")
+                  <div className="flex items-center gap-4">
+                    <div className="flex-1">
+                      <Slider
+                        value={[campaign.days]}
+                        min={1}
+                        max={30}
+                        step={1}
+                        onValueChange={(value) => {
+                          handleUpdateCampaign({ days: value[0] });
+
+                          // Update end date if start date exists
+                          if (campaign.dateRange.start) {
+                            const newEndDate = addDays(
+                              campaign.dateRange.start,
+                              value[0] - 1
                             );
-                            if (!isNaN(newImpressions)) {
-                              handleUpdateCampaign({
-                                impressions: newImpressions,
-                              });
-                            }
-                          }}
-                          className="bg-[#0a0c14] border-[#2a2d3a] cursor-not-allowed"
-                        />
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent className="bg-[#1a1d2d] border-[#2a2d3a] text-white p-0">
-                      <Link href="/campaign-builder">
-                        <Button
-                          variant="ghost"
-                          className="w-full flex items-center justify-start gap-2 text-white hover:bg-slate-800 hover:text-white py-3"
-                        >
-                          <ArrowLeft className="h-4 w-4" />
-                          <span>
-                            Go to Campaign Builder to adjust impressions
-                          </span>
-                        </Button>
-                      </Link>
-                    </TooltipContent>
-                  </Tooltip>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Budget</label>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div className="relative w-full">
-                        <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
-                          $
-                        </span>
-                        <Input
-                          type="text"
-                          value={calculatePrice().toLocaleString()}
-                          disabled
-                          className="bg-[#0a0c14] border-[#2a2d3a] pl-7 cursor-not-allowed"
-                        />
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent className="bg-[#1a1d2d] border-[#2a2d3a] text-white p-0">
-                      <Link href="/campaign-builder">
-                        <Button
-                          variant="ghost"
-                          className="w-full flex items-center justify-start gap-2 text-white hover:bg-slate-800 hover:text-white py-3"
-                        >
-                          <span>
-                            Adjust the campaign settings to change the budget
-                          </span>
-                        </Button>
-                      </Link>
-                    </TooltipContent>
-                  </Tooltip>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Campaign Schedule Card */}
-          <Card className="bg-[#151825] border-[#2a2d3a]">
-            <CardHeader className="flex flex-col gap-2">
-              <div className="flex w-full justify-between items-center">
-                <CardTitle className="text-lg">Campaign Schedule</CardTitle>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className={cn(
-                    "hover:cursor-pointer ml-auto",
-                    campaign.days === 7 && "opacity-50 cursor-not-allowed"
-                  )}
-                  disabled={campaign.days === 7}
-                  onClick={() =>
-                    setCampaign((prev) => {
-                      // Set to 7 days starting from today or current start date
-                      const startDate = prev.dateRange.start || today;
-                      return {
-                        ...prev,
-                        dateRange: {
-                          start: startDate,
-                          end: addDays(startDate, 6), // 7 days total (start date + 6 days)
-                        },
-                        days: 7,
-                      };
-                    })
-                  }
-                >
-                  Reset
-                </Button>
-              </div>
-              <CardDescription>
-                Select a start and end date for your campaign.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <Tooltip delayDuration={0}>
-                <TooltipTrigger asChild>
-                  <div className="bg-slate-950 border border-slate-800 rounded-lg w-full">
-                    <DateRangeCalendar
-                      onRangeSelect={handleDateRangeSelect}
-                      initialRange={campaign.dateRange}
-                      className="bg-slate-950 text-white border-slate-800"
-                      readOnly={true}
-                    />
+                            setCampaign((prev) => ({
+                              ...prev,
+                              dateRange: {
+                                ...prev.dateRange,
+                                end: newEndDate,
+                              },
+                            }));
+                          }
+                        }}
+                      />
+                    </div>
+                    <span className="text-sm font-medium ">
+                      {campaign.days} days
+                    </span>
                   </div>
-                </TooltipTrigger>
-                <TooltipContent
-                  className="bg-[#1a1d2d] border-[#2a2d3a] text-white p-2 max-w-[250px]"
-                  side="top"
-                >
-                  Adjust the campaign settings to change your campaign date
-                  range
-                </TooltipContent>
-              </Tooltip>
-            </CardContent>
-          </Card>
+                </div>
+
+                {/* Impressions and Budget */}
+                <div className="grid gap-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">
+                      Target Impressions
+                    </label>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="relative">
+                          <Input
+                            type="text"
+                            disabled
+                            value={campaign.impressions.toLocaleString()}
+                            onChange={(e) => {
+                              const newImpressions = parseInt(
+                                e.target.value.replace(/,/g, "")
+                              );
+                              if (!isNaN(newImpressions)) {
+                                handleUpdateCampaign({
+                                  impressions: newImpressions,
+                                });
+                              }
+                            }}
+                            className="bg-[#0a0c14] border-[#2a2d3a] cursor-not-allowed"
+                          />
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent className="bg-[#1a1d2d] border-[#2a2d3a] text-white p-0">
+                        <Link href="/campaign-builder">
+                          <Button
+                            variant="ghost"
+                            className="w-full flex items-center justify-start gap-2 text-white hover:bg-slate-800 hover:text-white py-3"
+                          >
+                            <ArrowLeft className="h-4 w-4" />
+                            <span>
+                              Go to Campaign Builder to adjust impressions
+                            </span>
+                          </Button>
+                        </Link>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Budget</label>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="relative w-full">
+                          <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+                            $
+                          </span>
+                          <Input
+                            type="text"
+                            value={calculatePrice().toLocaleString()}
+                            disabled
+                            className="bg-[#0a0c14] border-[#2a2d3a] pl-7 cursor-not-allowed"
+                          />
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent className="bg-[#1a1d2d] border-[#2a2d3a] text-white p-0">
+                        <Link href="/campaign-builder">
+                          <Button
+                            variant="ghost"
+                            className="w-full flex items-center justify-start gap-2 text-white hover:bg-slate-800 hover:text-white py-3"
+                          >
+                            <span>
+                              Adjust the campaign settings to change the budget
+                            </span>
+                          </Button>
+                        </Link>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Campaign Schedule Card - 2/3 width */}
+          <div className="lg:col-span-2">
+            <Card className="bg-[#151825] border-[#2a2d3a] h-full">
+              <CardHeader className="flex flex-col gap-2">
+                <div className="flex w-full justify-between items-center">
+                  <CardTitle className="text-lg">Campaign Schedule</CardTitle>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className={cn(
+                      "hover:cursor-pointer ml-auto",
+                      campaign.days === 7 && "opacity-50 cursor-not-allowed"
+                    )}
+                    disabled={campaign.days === 7}
+                    onClick={() =>
+                      setCampaign((prev) => {
+                        const startDate = prev.dateRange.start || today;
+                        return {
+                          ...prev,
+                          dateRange: {
+                            start: startDate,
+                            end: addDays(startDate, 6),
+                          },
+                          days: 7,
+                        };
+                      })
+                    }
+                  >
+                    Reset
+                  </Button>
+                </div>
+                <CardDescription>
+                  Select a start and end date for your campaign.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="flex flex-col flex-1 min-h-0">
+                <Tooltip delayDuration={0}>
+                  <TooltipTrigger asChild>
+                    <div className="flex-1 bg-slate-950 border border-slate-800 rounded-lg w-full min-h-0">
+                      <DateRangeCalendar
+                        onRangeSelect={handleDateRangeSelect}
+                        initialRange={campaign.dateRange}
+                        className="bg-slate-950 text-white border-slate-800 h-full"
+                        readOnly={true}
+                      />
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent
+                    className="bg-[#1a1d2d] border-[#2a2d3a] text-white p-2 max-w-[250px]"
+                    side="top"
+                  >
+                    Adjust the campaign settings to change your campaign date
+                    range
+                  </TooltipContent>
+                </Tooltip>
+              </CardContent>
+            </Card>
+          </div>
         </div>
 
         {/* Sticky bottom section */}
