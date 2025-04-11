@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Poppins, Inter } from "next/font/google";
 import "./globals.css";
 import NextTopLoader from "nextjs-toploader";
+import { Toaster } from "react-hot-toast";
 
 // import { Toaster } from "react-hot-toast";
 // import AuthSessionProvider from "@/lib/AuthSession";
@@ -46,7 +47,24 @@ export default function RootLayout({
           shadow="0 0 5px #2299DD,0 0 5px #2299DD"
         />
         {children}
-        {/* <Toaster position="bottom-center" /> */}
+        <Toaster
+          position="bottom-right"
+          toastOptions={{
+            duration: 5000,
+            style: {
+              background: "#1e293b",
+              color: "#fff",
+            },
+            success: {
+              duration: 5000,
+              style: {
+                background: "#1e293b",
+                color: "#fff",
+              },
+            },
+          }}
+          reverseOrder={true}
+        />
       </body>
     </html>
   );

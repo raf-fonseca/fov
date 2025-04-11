@@ -4,10 +4,11 @@ import { useState, useEffect } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
-import { Trash2, ImageIcon, ArrowRight } from "lucide-react";
+import { Trash2, ImageIcon, ArrowRight, Undo2 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
+import toast from "react-hot-toast";
 import {
   Dialog,
   DialogContent,
@@ -209,10 +210,60 @@ export default function CampaignBuilder() {
   // Dialog action handlers
   const applyRedistribute = () => {
     if (activeSlotId) {
-      setImpressionValues((prev) => ({
-        ...prev,
-        [activeSlotId]: newValue,
-      }));
+      // Store current values for potential undo
+      const currentValues = { ...impressionValues };
+
+      // Calculate the difference between new and original value
+      const diff = newValue - originalValue;
+
+      // Get all slots except the one being changed
+      const otherSlots = games
+        .flatMap((game) => game.adSlots)
+        .filter((slot) => slot.id !== activeSlotId);
+
+      // Calculate how much to adjust each other slot
+      const amountToAdjust = -diff / (otherSlots.length || 1);
+
+      // Create new impression values
+      const newValues: Record<string, number> = {};
+
+      // Update all slots
+      games.forEach((game) => {
+        game.adSlots.forEach((slot) => {
+          if (slot.id === activeSlotId) {
+            newValues[slot.id] = newValue;
+          } else {
+            const currentValue = impressionValues[slot.id] ?? slot.impressions;
+            newValues[slot.id] = Math.max(0, currentValue + amountToAdjust);
+          }
+        });
+      });
+
+      // Update the impression values
+      setImpressionValues(newValues);
+
+      // Show toast with undo option
+      toast.success(
+        (t) => (
+          <div className="flex items-center justify-between gap-2 w-full">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => {
+                  setImpressionValues(currentValues);
+                  toast.dismiss(t.id);
+                }}
+                className="text-sky-400 hover:text-sky-300 p-1 hover:bg-slate-700 rounded"
+              >
+                <Undo2 size={16} />
+              </button>
+              <span>Impressions successfully re-distributed</span>
+            </div>
+          </div>
+        ),
+        {
+          duration: 2000,
+        }
+      );
     }
     handleDialogClose();
   };
